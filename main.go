@@ -21,7 +21,7 @@ func main() {
 	opt, _ := redis.ParseURL(os.Getenv("REDIS_URL"))
 	rdb := redis.NewClient(opt)
 
-	pg_conn, err := pgx.Connect(context.Background(), os.Getenv("POSTGRES_URL"))
+	pg_conn, err := pgx.Connect(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
