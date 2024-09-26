@@ -10,7 +10,6 @@ import (
 
 	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5"
-	_ "github.com/joho/godotenv/autoload"
 )
 
 //go:embed templates/*

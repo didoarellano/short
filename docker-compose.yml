@@ -11,8 +11,11 @@ services:
       - "8090:8090"
     links:
       - db
+    env_file: ".env"
     environment:
       air_wd: /app
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db/${POSTGRES_DB}
+      REDIS_URL: redis://redis:6379
 
   db:
     image: postgres:16.6-alpine
