@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
-  <title>Short</title>
+  <link rel="icon"
+    href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
+  <title>Signin | Short</title>
 </head>
 <body>
   <nav>
     <ul>
       <li><a href="/">Home</a></li>
-      <li><a href="/dashboard">Dashboard</a></li>
       <li><a href="/auth/google">Sign in with Google</a></li>
       <li>
         <form action="/logout" method="POST">
@@ -21,6 +21,6 @@
   </nav>
 
   <h1>🩳 Short</h1>
-  <h2>{{.greeting}}</h2>
+  <p><a href="/auth/google">Sign in with Google</a></p>
 </body>
 </html>
