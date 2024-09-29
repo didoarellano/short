@@ -23,6 +23,18 @@ var t = template.Must(template.ParseFS(resources, "templates/*"))
 
 var sessionStore *redisstore.RedisStore
 
+type ContextKey string
+
+const UserContextKey ContextKey = "user"
+
+func authSessionMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, _ := sessionStore.Get(r, "auth")
+		ctx := context.WithValue(r.Context(), UserContextKey, session.Values)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	gothUser, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
@@ -58,12 +70,12 @@ func privateRoute(next http.Handler) http.Handler {
 }
 
 func signinHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := sessionStore.Get(r, "auth")
-	if session.Values["id"] != nil {
+	user := r.Context().Value(UserContextKey)
+	if user != nil {
 		http.Redirect(w, r, "/dashboard", http.StatusFound)
 		return
 	}
-	if err := t.ExecuteTemplate(w, "signin.html", nil); err != nil {
+	if err := t.ExecuteTemplate(w, "signin.html", user); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
@@ -88,8 +100,8 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := sessionStore.Get(r, "auth")
-	if err := t.ExecuteTemplate(w, "dashboard.html", session.Values); err != nil {
+	user := r.Context().Value(UserContextKey)
+	if err := t.ExecuteTemplate(w, "dashboard.html", user); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
@@ -116,6 +128,7 @@ func main() {
 	)
 
 	r := mux.NewRouter()
+	r.Use(authSessionMiddleware)
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
 			"greeting": "Hello world",
