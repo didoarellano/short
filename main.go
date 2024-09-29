@@ -46,6 +46,17 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
 }
 
+func privateRoute(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		session, _ := sessionStore.Get(r, "auth")
+		if session.Values["id"] == nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func signinHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := sessionStore.Get(r, "auth")
 	if session.Values["id"] != nil {
@@ -74,6 +85,13 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	http.Redirect(w, r, "/", http.StatusSeeOther)
+}
+
+func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+	session, _ := sessionStore.Get(r, "auth")
+	if err := t.ExecuteTemplate(w, "dashboard.html", session.Values); err != nil {
+		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+	}
 }
 
 func main() {
@@ -110,6 +128,9 @@ func main() {
 	r.HandleFunc("/logout", logoutHandler).Methods("POST")
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 	r.HandleFunc("/auth/{provider}/callback", oAuthCallbackHandler).Methods("GET")
+
+	// Private routes
+	r.Handle("/dashboard", privateRoute(http.HandlerFunc(dashboardHandler))).Methods("GET")
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
