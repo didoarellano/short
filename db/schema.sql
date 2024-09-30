@@ -1,6 +1,6 @@
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
-  username TEXT,
+  name TEXT,
   email TEXT UNIQUE NOT NULL,
   role TEXT NOT NULL CHECK(role IN ('basic', 'pro', 'admin')) DEFAULT 'basic',
   oauth_provider TEXT,

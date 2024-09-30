@@ -46,7 +46,7 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	session, _ := sessionStore.Get(r, "auth")
 	session.Values["id"] = gothUser.UserID
-	session.Values["username"] = gothUser.NickName
+	session.Values["name"] = gothUser.NickName
 	err = session.Save(r, w)
 
 	if err != nil {
