@@ -9,8 +9,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/didoarellano/short/db"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/google"
@@ -21,6 +24,7 @@ import (
 var resources embed.FS
 var t = template.Must(template.ParseFS(resources, "templates/*"))
 
+var queries *db.Queries
 var sessionStore *redisstore.RedisStore
 
 type ContextKey string
@@ -42,11 +46,22 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO Save user to db
+	user, err := queries.CreateOrUpdateUser(context.Background(), db.CreateOrUpdateUserParams{
+		Name:          pgtype.Text{String: gothUser.NickName, Valid: gothUser.NickName != ""},
+		Email:         gothUser.Email,
+		OauthProvider: pgtype.Text{String: gothUser.Provider, Valid: gothUser.Provider != ""},
+		Role:          "basic",
+	})
 
 	session, _ := sessionStore.Get(r, "auth")
-	session.Values["id"] = gothUser.UserID
-	session.Values["name"] = gothUser.NickName
+	if err != nil {
+		log.Printf("Failed to create or update user: %v", err)
+		http.Error(w, "Failed to create or update user", http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["id"] = user.ID
+	session.Values["name"] = user.Name.String
 	err = session.Save(r, w)
 
 	if err != nil {
@@ -107,17 +122,25 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	ctx := context.Background()
+
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
-
 	redis_client := redis.NewClient(opt)
 
-	sessionStore, err = redisstore.NewRedisStore(context.Background(), redis_client)
+	sessionStore, err = redisstore.NewRedisStore(ctx, redis_client)
 	if err != nil {
 		log.Fatal("Faled to create redis store", err)
 	}
+
+	pg_conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer pg_conn.Close(ctx)
+	queries = db.New(pg_conn)
 
 	goth.UseProviders(
 		google.New(

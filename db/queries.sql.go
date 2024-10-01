@@ -7,7 +7,46 @@ package db
 
 import (
 	"context"
+
+	"github.com/jackc/pgx/v5/pgtype"
 )
+
+const createOrUpdateUser = `-- name: CreateOrUpdateUser :one
+INSERT INTO users (name, email, role, oauth_provider)
+VALUES ($1, $2, $4, $3)
+ON CONFLICT(email) DO UPDATE SET
+name = excluded.name,
+oauth_provider = excluded.oauth_provider,
+updated_at = CURRENT_TIMESTAMP
+RETURNING id, name, email, role, oauth_provider, created_at, updated_at
+`
+
+type CreateOrUpdateUserParams struct {
+	Name          pgtype.Text
+	Email         string
+	OauthProvider pgtype.Text
+	Role          string
+}
+
+func (q *Queries) CreateOrUpdateUser(ctx context.Context, arg CreateOrUpdateUserParams) (User, error) {
+	row := q.db.QueryRow(ctx, createOrUpdateUser,
+		arg.Name,
+		arg.Email,
+		arg.OauthProvider,
+		arg.Role,
+	)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Email,
+		&i.Role,
+		&i.OauthProvider,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
 
 const getUser = `-- name: GetUser :one
 SELECT id, name, email, role, oauth_provider, created_at, updated_at FROM users
