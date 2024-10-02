@@ -40,6 +40,13 @@ func authSessionMiddleware(next http.Handler) http.Handler {
 }
 
 func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
+	session, err := sessionStore.Get(r, "auth")
+	if session.Values["id"] != nil {
+		// user is already logged in
+		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		return
+	}
+
 	gothUser, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		http.Error(w, "Authentication failed: "+err.Error(), http.StatusInternalServerError)
@@ -53,7 +60,6 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		Role:          "basic",
 	})
 
-	session, _ := sessionStore.Get(r, "auth")
 	if err != nil {
 		log.Printf("Failed to create or update user: %v", err)
 		http.Error(w, "Failed to create or update user", http.StatusInternalServerError)
