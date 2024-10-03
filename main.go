@@ -41,6 +41,12 @@ func authSessionMiddleware(next http.Handler) http.Handler {
 
 func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := sessionStore.Get(r, "auth")
+	if err != nil {
+		log.Printf("Error retrieving session: %v", err)
+		http.Error(w, "Failed to retrieve session", http.StatusInternalServerError)
+		return
+	}
+
 	if session.Values["id"] != nil {
 		// user is already logged in
 		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
