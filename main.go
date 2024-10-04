@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"embed"
+	"encoding/gob"
 	"fmt"
 	"html/template"
 	"log"
@@ -141,9 +142,24 @@ type FormData struct {
 	Notes          string
 }
 
+type FormValidationErrors map[string]string
+
 func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
+	var validationErrors FormValidationErrors
+	session, _ := sessionStore.Get(r, "auth")
+
 	if r.Method == "GET" {
-		if err := t.ExecuteTemplate(w, "create_link.html", nil); err != nil {
+		flashes := session.Flashes()
+		if len(flashes) > 0 {
+			if v, ok := flashes[0].(*FormValidationErrors); ok {
+				validationErrors = *v
+			}
+		}
+		data := map[string]interface{}{
+			"validationErrors": validationErrors,
+		}
+		session.Save(r, w)
+		if err := t.ExecuteTemplate(w, "create_link.html", data); err != nil {
 			http.Error(w, "Failed to render template", http.StatusInternalServerError)
 		}
 		return
@@ -160,7 +176,11 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if formData.DestinationUrl == "" {
-		// TODO: Add flash message & validation to session
+		validationErrors := FormValidationErrors{
+			"url": "Destination URL is required",
+		}
+		session.AddFlash(validationErrors)
+		session.Save(r, w)
 		http.Redirect(w, r, "/links/new", http.StatusFound)
 		return
 	}
@@ -185,6 +205,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	gob.Register(&FormValidationErrors{})
 	ctx := context.Background()
 
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))

@@ -28,7 +28,10 @@
     <h2>Create a new short link</h2>
     <p>
       <label for="url">Destination</label>
-      <input type="text" name="url" id="url" max-length="2048" />
+      <input type="text" name="url" id="url" max-length="2048" required />
+      {{ with index .validationErrors "url" }}
+        <p>{{ . }}</p>
+      {{ end }}
     </p>
     <p>
       <label for="title">Title (optional)</label>
