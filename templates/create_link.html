@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
-  <title>Dashboard | Short</title>
+  <title>Create New Short Link | Short</title>
 </head>
 <body>
   <nav>
@@ -22,9 +22,23 @@
     </ul>
   </nav>
 
-  <p><a href="/auth/google">Sign in with Google</a></p>
   <h1>🩳 Short</h1>
-  <h2>Dashboard</h2>
-  <h3>Hello {{.name}}!</h3>
+
+  <form method="POST">
+    <h2>Create a new short link</h2>
+    <p>
+      <label for="url">Destination</label>
+      <input type="text" name="url" id="url" max-length="2048" />
+    </p>
+    <p>
+      <label for="title">Title (optional)</label>
+      <input type="text" name="title" id="title" />
+    </p>
+    <p>
+      <label for="notes">Notes (optional)</label>
+      <textarea name="notes" id="notes"></textarea>
+    </p>
+    <button type="submit">Create Link</button>
+  </form>
 </body>
 </html>

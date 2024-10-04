@@ -8,8 +8,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/didoarellano/short/db"
+	"github.com/didoarellano/short/shortcode"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -133,6 +135,55 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type FormData struct {
+	DestinationUrl string
+	Title          string
+	Notes          string
+}
+
+func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		if err := t.ExecuteTemplate(w, "create_link.html", nil); err != nil {
+			http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
+	userID := user["id"].(int32)
+
+	r.ParseForm()
+	formData := FormData{
+		DestinationUrl: strings.TrimSpace(r.FormValue("url")),
+		Title:          strings.TrimSpace(r.FormValue("title")),
+		Notes:          strings.TrimSpace(r.FormValue("notes")),
+	}
+
+	if formData.DestinationUrl == "" {
+		// TODO: Add flash message & validation to session
+		http.Redirect(w, r, "/links/new", http.StatusFound)
+		return
+	}
+
+	shortCode := shortcode.New(userID, formData.DestinationUrl, 7)
+
+	_, err := queries.CreateLink(context.Background(), db.CreateLinkParams{
+		UserID:         userID,
+		ShortCode:      shortCode,
+		DestinationUrl: formData.DestinationUrl,
+		Title:          pgtype.Text{String: formData.Title, Valid: true},
+		Notes:          pgtype.Text{String: formData.Notes, Valid: true},
+	})
+
+	if err != nil {
+		log.Printf("Failed to create new link: %v", err)
+		http.Error(w, "Failed to create new link", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+}
+
 func main() {
 	ctx := context.Background()
 
@@ -179,6 +230,8 @@ func main() {
 
 	// Private routes
 	r.Handle("/dashboard", privateRoute(http.HandlerFunc(dashboardHandler))).Methods("GET")
+	r.Handle("/links/new", privateRoute(http.HandlerFunc(CreateLinkHandler))).Methods("GET", "POST")
+
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
