@@ -8,6 +8,17 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Link struct {
+	ID             int32
+	UserID         int32
+	ShortCode      string
+	DestinationUrl string
+	Title          pgtype.Text
+	Notes          pgtype.Text
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
+}
+
 type User struct {
 	ID            int32
 	Name          pgtype.Text

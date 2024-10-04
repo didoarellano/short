@@ -11,6 +11,42 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const createLink = `-- name: CreateLink :one
+INSERT INTO links (user_id, short_code, destination_url, title, notes)
+VALUES ($1, $2, $3, $4, $5)
+RETURNING id, user_id, short_code, destination_url, title, notes, created_at, updated_at
+`
+
+type CreateLinkParams struct {
+	UserID         int32
+	ShortCode      string
+	DestinationUrl string
+	Title          pgtype.Text
+	Notes          pgtype.Text
+}
+
+func (q *Queries) CreateLink(ctx context.Context, arg CreateLinkParams) (Link, error) {
+	row := q.db.QueryRow(ctx, createLink,
+		arg.UserID,
+		arg.ShortCode,
+		arg.DestinationUrl,
+		arg.Title,
+		arg.Notes,
+	)
+	var i Link
+	err := row.Scan(
+		&i.ID,
+		&i.UserID,
+		&i.ShortCode,
+		&i.DestinationUrl,
+		&i.Title,
+		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return i, err
+}
+
 const createOrUpdateUser = `-- name: CreateOrUpdateUser :one
 INSERT INTO users (name, email, role, oauth_provider)
 VALUES ($1, $2, $4, $3)
