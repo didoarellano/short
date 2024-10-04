@@ -19,4 +19,7 @@ db/db.go db/models.go db/queries.sql.go: db/schema.sql db/queries.sql | check_sq
 
 db: db/db.go db/models.go db/queries.sql.go
 
-.PHONY: check_atlas check_sqlc migrate db
+test:
+	go test ./...
+
+.PHONY: check_atlas check_sqlc migrate db test
