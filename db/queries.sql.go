@@ -84,6 +84,41 @@ func (q *Queries) CreateOrUpdateUser(ctx context.Context, arg CreateOrUpdateUser
 	return i, err
 }
 
+const findDuplicatesForURL = `-- name: FindDuplicatesForURL :one
+WITH limited_links AS (
+  SELECT short_code
+  FROM links
+  WHERE user_id = $1
+    AND destination_url = $2
+  LIMIT $3
+)
+SELECT
+  ARRAY_AGG(short_code)::text[] AS short_codes,
+  GREATEST((SELECT COUNT(*)
+              FROM links  As l
+              WHERE l.user_id = $1
+                AND l.destination_url = $2) - $3, 0)::int AS remaining_count
+FROM limited_links
+`
+
+type FindDuplicatesForURLParams struct {
+	UserID         int32
+	DestinationUrl string
+	Limit          int32
+}
+
+type FindDuplicatesForURLRow struct {
+	ShortCodes     []string
+	RemainingCount int32
+}
+
+func (q *Queries) FindDuplicatesForURL(ctx context.Context, arg FindDuplicatesForURLParams) (FindDuplicatesForURLRow, error) {
+	row := q.db.QueryRow(ctx, findDuplicatesForURL, arg.UserID, arg.DestinationUrl, arg.Limit)
+	var i FindDuplicatesForURLRow
+	err := row.Scan(&i.ShortCodes, &i.RemainingCount)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, name, email, role, oauth_provider, created_at, updated_at FROM users
 WHERE id = $1 LIMIT 1

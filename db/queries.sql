@@ -15,3 +15,19 @@ RETURNING *;
 INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
+
+-- name: FindDuplicatesForURL :one
+WITH limited_links AS (
+  SELECT short_code
+  FROM links
+  WHERE user_id = $1
+    AND destination_url = $2
+  LIMIT sqlc.arg('limit')
+)
+SELECT
+  ARRAY_AGG(short_code)::text[] AS short_codes,
+  GREATEST((SELECT COUNT(*)
+              FROM links  As l
+              WHERE l.user_id = $1
+                AND l.destination_url = $2) - sqlc.arg('limit'), 0)::int AS remaining_count
+FROM limited_links;

@@ -142,7 +142,20 @@ type FormData struct {
 	Notes          string
 }
 
-type FormValidationErrors map[string]string
+type DuplicateURL struct {
+	Text string
+	Href string
+}
+
+type DuplicateURLs struct {
+	URLs           []DuplicateURL
+	RemainingCount int32
+}
+
+type FormValidationErrors struct {
+	FormFields map[string]string
+	Duplicates DuplicateURLs
+}
 
 func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	var validationErrors FormValidationErrors
@@ -177,12 +190,43 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 	if formData.DestinationUrl == "" {
 		validationErrors := FormValidationErrors{
-			"url": "Destination URL is required",
+			FormFields: map[string]string{
+				"url": "Destination URL is required",
+			},
 		}
 		session.AddFlash(validationErrors)
 		session.Save(r, w)
 		http.Redirect(w, r, "/links/new", http.StatusFound)
 		return
+	}
+
+	allowDuplicate := r.FormValue("allow-duplicate") == "on"
+	if !allowDuplicate {
+		links, _ := queries.FindDuplicatesForURL(context.Background(), db.FindDuplicatesForURLParams{
+			UserID:         userID,
+			DestinationUrl: formData.DestinationUrl,
+			Limit:          3,
+		})
+
+		if len(links.ShortCodes) > 0 {
+			dupes := DuplicateURLs{
+				RemainingCount: links.RemainingCount,
+			}
+			for _, shortcode := range links.ShortCodes {
+				url := DuplicateURL{
+					Href: "/links/" + shortcode,
+					Text: shortcode,
+				}
+				dupes.URLs = append(dupes.URLs, url)
+			}
+			validationErrors := FormValidationErrors{
+				Duplicates: dupes,
+			}
+			session.AddFlash(validationErrors)
+			session.Save(r, w)
+			http.Redirect(w, r, "/links/new", http.StatusSeeOther)
+			return
+		}
 	}
 
 	shortCode := shortcode.New(userID, formData.DestinationUrl, 7)
