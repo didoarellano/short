@@ -4,66 +4,55 @@ import (
 	"testing"
 )
 
-func TestGenerateShortCode(t *testing.T) {
+func TestShortCodeLength(t *testing.T) {
 	tests := []struct {
-		name   string
-		userID int32
-		url    string
-		length int
+		userID     int32
+		url        string
+		length     int
+		wantLength int
 	}{
-		{
-			name:   "Consistent output for same input",
-			userID: 12345,
-			url:    "https://example.com",
-			length: 6,
-		},
-		{
-			name:   "Different URLs produce different codes",
-			userID: 12345,
-			url:    "https://example.com/page1",
-			length: 7,
-		},
-		{
-			name:   "Different user IDs produce different codes",
-			userID: 54321,
-			url:    "https://example.com",
-			length: 8,
-		},
-		{
-			name:   "Edge case with empty URL",
-			userID: 0,
-			url:    "",
-			length: 6,
-		},
+		{userID: 1, url: "https://example.com", length: 6, wantLength: 6},
+		{userID: 2, url: "https://example.com", length: 8, wantLength: 8},
+		{userID: 1, url: "https://example.com", length: 10, wantLength: 10},
+		{userID: 1, url: "https://anotherexample.com", length: 8, wantLength: 8},
 	}
 
-	shortCodes := make(map[string]bool) // To check uniqueness
-
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			code := GenerateShortCode(tt.userID, tt.url, tt.length)
-			if code == "" {
-				t.Errorf("Generated short code is empty")
+		t.Run(tt.url, func(t *testing.T) {
+			got := GenerateShortCode(tt.userID, tt.url, tt.length)
+			gotLength := len(got)
+			if gotLength != tt.wantLength {
+				t.Errorf("Expected %v, got %v", tt.wantLength, gotLength)
 			}
-
-			if _, exists := shortCodes[code]; exists {
-				t.Errorf("Duplicate short code generated for input: userID=%d, url=%s", tt.userID, tt.url)
-			}
-			shortCodes[code] = true
-
-			t.Logf("Generated short code for userID=%d, url=%s: %s", tt.userID, tt.url, code)
 		})
 	}
 }
 
-func TestConsistency(t *testing.T) {
-	userID := int32(12345)
+func TestUniqueForSameURL(t *testing.T) {
+	// Same userID, same URL should generate unique short code
 	url := "https://example.com"
+	userID := int32(1)
+	length := 7
 
-	code1 := GenerateShortCode(userID, url, 7)
-	code2 := GenerateShortCode(userID, url, 7)
+	code1 := GenerateShortCode(userID, url, length)
+	code2 := GenerateShortCode(userID, url, length)
 
-	if code1 != code2 {
-		t.Errorf("Short code is not consistent. Expected %s, got %s", code1, code2)
+	if code1 == code2 {
+		t.Errorf("Expected different short codes, got same: %v", code1)
+	}
+}
+
+func TestUniqueToUser(t *testing.T) {
+	// Different userIDs, same URL should generate unique short codes
+	url := "https://example.com"
+	userID1 := int32(1)
+	userID2 := int32(2)
+	length := 8
+
+	code1 := GenerateShortCode(userID1, url, length)
+	code2 := GenerateShortCode(userID2, url, length)
+
+	if code1 == code2 {
+		t.Errorf("Expected different short codes, got same: %v", code1)
 	}
 }

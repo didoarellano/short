@@ -1,7 +1,9 @@
 package shortcode
 
 import (
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/akamensky/base58"
@@ -21,7 +23,8 @@ func New(userID int32, url string, length int) string {
 
 // Hash the URL and user ID to create a unique short code
 func GenerateShortCode(userID int32, url string, length int) string {
-	data := fmt.Sprintf("%d-%s", userID, url)
+	salt := generateSalt()
+	data := fmt.Sprintf("%d-%s-%s", userID, url, salt)
 
 	hash := sha256.New()
 	hash.Write([]byte(data))
@@ -38,4 +41,10 @@ func GenerateShortCode(userID int32, url string, length int) string {
 		shortCode += string(base58Chars[0])
 	}
 	return shortCode
+}
+
+func generateSalt() string {
+	salt := make([]byte, 8)
+	rand.Read(salt)
+	return hex.EncodeToString(salt)
 }
