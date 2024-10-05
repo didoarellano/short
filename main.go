@@ -36,14 +36,14 @@ const UserContextKey ContextKey = "user"
 
 func authSessionMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := sessionStore.Get(r, "auth")
+		session, _ := sessionStore.Get(r, "session")
 		ctx := context.WithValue(r.Context(), UserContextKey, session.Values)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := sessionStore.Get(r, "auth")
+	session, err := sessionStore.Get(r, "session")
 	if err != nil {
 		log.Printf("Error retrieving session: %v", err)
 		http.Error(w, "Failed to retrieve session", http.StatusInternalServerError)
@@ -90,7 +90,7 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 func privateRoute(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := sessionStore.Get(r, "auth")
+		session, _ := sessionStore.Get(r, "session")
 		if session.Values["id"] == nil {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
@@ -111,7 +111,7 @@ func signinHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := sessionStore.Get(r, "auth")
+	session, _ := sessionStore.Get(r, "session")
 	session.Options.MaxAge = -1
 	err := session.Save(r, w)
 
@@ -159,7 +159,7 @@ type FormValidationErrors struct {
 
 func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	var validationErrors FormValidationErrors
-	session, _ := sessionStore.Get(r, "auth")
+	session, _ := sessionStore.Get(r, "session")
 
 	if r.Method == "GET" {
 		flashes := session.Flashes()
