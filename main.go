@@ -130,8 +130,27 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(UserContextKey)
-	if err := t.ExecuteTemplate(w, "dashboard.html", user); err != nil {
+	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
+	userID := user["id"].(int32)
+
+	links, err := queries.GetPaginatedLinksForUser(context.Background(), db.GetPaginatedLinksForUserParams{
+		UserID: userID,
+		Limit:  5,
+		Offset: 0,
+	})
+
+	if err != nil {
+		log.Printf("Failed to retrieve user's links: %v", err)
+		http.Error(w, "Failed to retrieve user's links: %v", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]interface{}{
+		"user":  user,
+		"links": links,
+	}
+
+	if err := t.ExecuteTemplate(w, "dashboard.html", data); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }

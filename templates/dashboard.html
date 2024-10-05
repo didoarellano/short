@@ -25,6 +25,36 @@
   <p><a href="/auth/google">Sign in with Google</a></p>
   <h1>🩳 Short</h1>
   <h2>Dashboard</h2>
-  <h3>Hello {{.name}}!</h3>
+  <h3>Hello {{.user.name}}!</h3>
+
+  {{ if not .links.Links }}
+    <p>No links found. <a href="/links/new">Shorten one.</a></p>
+  {{ else }}
+    <ul>
+      {{ range .links.Links }}
+        <li>
+
+          <h3>
+            <a href="links/{{ .short_code }}">
+              {{ with .title }}
+                {{ . }}
+              {{ else }}
+                {{ .destination_url }}
+              {{ end }}
+            </a>
+          </h3>
+
+          {{ $shortUrl := printf "https://ddo.sh/%s" .short_code }}
+          <p><a href="{{ $shortUrl }}">{{ $shortUrl }}</a></p>
+
+          <p><a href="{{ .destination_url }}">{{ .destination_url }}</a></p>
+
+          {{ with .notes }}
+            <p>{{ . }}</p>
+          {{ end }}
+        </li>
+      {{ end }}
+    </ul>
+  {{ end }}
 </body>
 </html>

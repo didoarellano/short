@@ -16,6 +16,30 @@ INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: GetPaginatedLinksForUser :one
+WITH paginated_links AS (
+  SELECT short_code, destination_url, title, notes
+  FROM links
+  WHERE user_id = $1
+  ORDER BY created_at DESC
+  LIMIT $2
+  OFFSET $3
+)
+SELECT
+  (SELECT COUNT(*)
+    FROM links l
+    WHERE l.user_id = $1
+  ) as total_count,
+  ARRAY_AGG(
+    jsonb_build_object(
+      'short_code', short_code,
+      'destination_url', destination_url,
+      'title', title,
+      'notes', notes
+    )
+  ) as links
+FROM paginated_links;
+
 -- name: FindDuplicatesForUrl :one
 WITH limited_links AS (
   SELECT short_code

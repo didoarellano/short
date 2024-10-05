@@ -120,6 +120,49 @@ func (q *Queries) FindDuplicatesForUrl(ctx context.Context, arg FindDuplicatesFo
 	return i, err
 }
 
+const getPaginatedLinksForUser = `-- name: GetPaginatedLinksForUser :one
+WITH paginated_links AS (
+  SELECT short_code, destination_url, title, notes
+  FROM links
+  WHERE user_id = $1
+  ORDER BY created_at DESC
+  LIMIT $2
+  OFFSET $3
+)
+SELECT
+  (SELECT COUNT(*)
+    FROM links l
+    WHERE l.user_id = $1
+  ) as total_count,
+  ARRAY_AGG(
+    jsonb_build_object(
+      'short_code', short_code,
+      'destination_url', destination_url,
+      'title', title,
+      'notes', notes
+    )
+  ) as links
+FROM paginated_links
+`
+
+type GetPaginatedLinksForUserParams struct {
+	UserID int32
+	Limit  int32
+	Offset int32
+}
+
+type GetPaginatedLinksForUserRow struct {
+	TotalCount int64
+	Links      interface{}
+}
+
+func (q *Queries) GetPaginatedLinksForUser(ctx context.Context, arg GetPaginatedLinksForUserParams) (GetPaginatedLinksForUserRow, error) {
+	row := q.db.QueryRow(ctx, getPaginatedLinksForUser, arg.UserID, arg.Limit, arg.Offset)
+	var i GetPaginatedLinksForUserRow
+	err := row.Scan(&i.TotalCount, &i.Links)
+	return i, err
+}
+
 const getUser = `-- name: GetUser :one
 SELECT id, name, email, role, oauth_provider, created_at, updated_at FROM users
 WHERE id = $1 LIMIT 1
