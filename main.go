@@ -149,6 +149,7 @@ type DuplicateURL struct {
 
 type DuplicateURLs struct {
 	URLs           []DuplicateURL
+	DestinationUrl string
 	RemainingCount int32
 }
 
@@ -210,6 +211,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 		if len(links.ShortCodes) > 0 {
 			dupes := DuplicateURLs{
+				DestinationUrl: formData.DestinationUrl,
 				RemainingCount: links.RemainingCount,
 			}
 			for _, shortcode := range links.ShortCodes {

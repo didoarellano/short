@@ -45,7 +45,14 @@
 
     <p>
       <label for="url">Destination</label>
-      <input type="text" name="url" id="url" max-length="2048"
+      <input
+          type="text"
+          name="url"
+          id="url"
+          max-length="2048"
+
+          {{ $destUrl := .validationErrors.Duplicates.DestinationUrl }}
+          value="{{ if $destUrl }}{{ $destUrl }}{{ end }}"
       />
       {{ with .validationErrors.FormFields.url }}
         <p>{{ . }}</p>
