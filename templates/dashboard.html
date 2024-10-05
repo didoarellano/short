@@ -27,11 +27,11 @@
   <h2>Dashboard</h2>
   <h3>Hello {{.user.name}}!</h3>
 
-  {{ if not .links.Links }}
+  {{ if not .links }}
     <p>No links found. <a href="/links/new">Shorten one.</a></p>
   {{ else }}
     <ul>
-      {{ range .links.Links }}
+      {{ range .links }}
         <li>
 
           <h3>
@@ -55,6 +55,24 @@
         </li>
       {{ end }}
     </ul>
+
+    {{ with .paginationLinks }}
+      <div>
+        <ul>
+          {{ range .}}
+            <li>
+              {{ if .Disabled }}
+                <a href="#" class="disabled">{{ .Text }}</a>
+              {{ else }}
+                <a href="{{ .Href }}">{{ .Text }}</a>
+              {{ end }}
+            </li>
+          {{ end }}
+        </ul>
+      </div>
+    {{ end }}
+
   {{ end }}
+
 </body>
 </html>

@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/didoarellano/short/db"
@@ -129,14 +130,31 @@ func logoutHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+const paginationLimit int = 2
+
+type PaginationLink struct {
+	Href     string
+	Text     string
+	Disabled bool
+}
+type PaginationLinks []PaginationLink
+
 func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
 	userID := user["id"].(int32)
 
+	// No page query param defaults to page 1
+	currentPage := 1
+	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
+		if parsedPage, err := strconv.Atoi(pageParam); err == nil && parsedPage > 0 {
+			currentPage = parsedPage
+		}
+	}
+
 	links, err := queries.GetPaginatedLinksForUser(context.Background(), db.GetPaginatedLinksForUserParams{
 		UserID: userID,
-		Limit:  5,
-		Offset: 0,
+		Limit:  int32(paginationLimit),
+		Offset: int32((currentPage - 1) * paginationLimit),
 	})
 
 	if err != nil {
@@ -145,9 +163,34 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	totalPages := (int(links.TotalCount) + paginationLimit - 1) / paginationLimit
+	paginationLinks := PaginationLinks{
+		{
+			Text:     "first",
+			Href:     "/dashboard",
+			Disabled: currentPage == 1,
+		},
+		{
+			Text:     "prev",
+			Href:     fmt.Sprintf("/dashboard?page=%d", currentPage-1),
+			Disabled: currentPage == 1,
+		},
+		{
+			Text:     "next",
+			Href:     fmt.Sprintf("/dashboard?page=%d", currentPage+1),
+			Disabled: currentPage == totalPages,
+		},
+		{
+			Text:     "last",
+			Href:     fmt.Sprintf("/dashboard?page=%d", totalPages),
+			Disabled: currentPage == totalPages,
+		},
+	}
+
 	data := map[string]interface{}{
-		"user":  user,
-		"links": links,
+		"user":            user,
+		"links":           links.Links,
+		"paginationLinks": paginationLinks,
 	}
 
 	if err := t.ExecuteTemplate(w, "dashboard.html", data); err != nil {
@@ -317,7 +360,6 @@ func main() {
 	// Private routes
 	r.Handle("/dashboard", privateRoute(http.HandlerFunc(dashboardHandler))).Methods("GET")
 	r.Handle("/links/new", privateRoute(http.HandlerFunc(CreateLinkHandler))).Methods("GET", "POST")
-
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
