@@ -22,6 +22,7 @@ WITH limited_links AS (
   FROM links
   WHERE user_id = $1
     AND destination_url = $2
+  ORDER BY created_at DESC
   LIMIT sqlc.arg('limit')
 )
 SELECT
