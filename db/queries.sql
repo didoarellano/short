@@ -16,7 +16,7 @@ INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
--- name: FindDuplicatesForURL :one
+-- name: FindDuplicatesForUrl :one
 WITH limited_links AS (
   SELECT short_code
   FROM links

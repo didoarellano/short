@@ -84,7 +84,7 @@ func (q *Queries) CreateOrUpdateUser(ctx context.Context, arg CreateOrUpdateUser
 	return i, err
 }
 
-const findDuplicatesForURL = `-- name: FindDuplicatesForURL :one
+const findDuplicatesForUrl = `-- name: FindDuplicatesForUrl :one
 WITH limited_links AS (
   SELECT short_code
   FROM links
@@ -101,20 +101,20 @@ SELECT
 FROM limited_links
 `
 
-type FindDuplicatesForURLParams struct {
+type FindDuplicatesForUrlParams struct {
 	UserID         int32
 	DestinationUrl string
 	Limit          int32
 }
 
-type FindDuplicatesForURLRow struct {
+type FindDuplicatesForUrlRow struct {
 	ShortCodes     []string
 	RemainingCount int32
 }
 
-func (q *Queries) FindDuplicatesForURL(ctx context.Context, arg FindDuplicatesForURLParams) (FindDuplicatesForURLRow, error) {
-	row := q.db.QueryRow(ctx, findDuplicatesForURL, arg.UserID, arg.DestinationUrl, arg.Limit)
-	var i FindDuplicatesForURLRow
+func (q *Queries) FindDuplicatesForUrl(ctx context.Context, arg FindDuplicatesForUrlParams) (FindDuplicatesForUrlRow, error) {
+	row := q.db.QueryRow(ctx, findDuplicatesForUrl, arg.UserID, arg.DestinationUrl, arg.Limit)
+	var i FindDuplicatesForUrlRow
 	err := row.Scan(&i.ShortCodes, &i.RemainingCount)
 	return i, err
 }

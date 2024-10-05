@@ -142,20 +142,20 @@ type FormData struct {
 	Notes          string
 }
 
-type DuplicateURL struct {
+type DuplicateUrl struct {
 	Text string
 	Href string
 }
 
-type DuplicateURLs struct {
-	URLs           []DuplicateURL
+type DuplicateUrls struct {
+	Urls           []DuplicateUrl
 	DestinationUrl string
 	RemainingCount int32
 }
 
 type FormValidationErrors struct {
 	FormFields map[string]string
-	Duplicates DuplicateURLs
+	Duplicates DuplicateUrls
 }
 
 func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
@@ -203,23 +203,23 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 	allowDuplicate := r.FormValue("allow-duplicate") == "on"
 	if !allowDuplicate {
-		links, _ := queries.FindDuplicatesForURL(context.Background(), db.FindDuplicatesForURLParams{
+		links, _ := queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
 			UserID:         userID,
 			DestinationUrl: formData.DestinationUrl,
 			Limit:          3,
 		})
 
 		if len(links.ShortCodes) > 0 {
-			dupes := DuplicateURLs{
+			dupes := DuplicateUrls{
 				DestinationUrl: formData.DestinationUrl,
 				RemainingCount: links.RemainingCount,
 			}
 			for _, shortcode := range links.ShortCodes {
-				url := DuplicateURL{
+				url := DuplicateUrl{
 					Href: "/links/" + shortcode,
 					Text: shortcode,
 				}
-				dupes.URLs = append(dupes.URLs, url)
+				dupes.Urls = append(dupes.Urls, url)
 			}
 			validationErrors := FormValidationErrors{
 				Duplicates: dupes,

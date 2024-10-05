@@ -28,11 +28,11 @@
     <h2>Create a new short link</h2>
 
     {{ with .validationErrors.Duplicates }}
-      {{ if .URLs }}
+      {{ if .Urls }}
       <div class="has-duplicates">
         <h3>You've shortened this link before:</h3>
         <ul>
-          {{ range .URLs }}
+          {{ range .Urls }}
           <li><a href="{{ .Href }}">{{ .Text }}</a></li>
           {{ end }}
         </ul>
