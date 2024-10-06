@@ -53,7 +53,7 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	if session.Values["id"] != nil {
 		// user is already logged in
-		http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+		http.Redirect(w, r, "/links", http.StatusSeeOther)
 		return
 	}
 
@@ -86,7 +86,7 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/links", http.StatusSeeOther)
 }
 
 func privateRoute(next http.Handler) http.Handler {
@@ -103,7 +103,7 @@ func privateRoute(next http.Handler) http.Handler {
 func signinHandler(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(UserContextKey)
 	if user != nil {
-		http.Redirect(w, r, "/dashboard", http.StatusFound)
+		http.Redirect(w, r, "/links", http.StatusFound)
 		return
 	}
 	if err := t.ExecuteTemplate(w, "signin.html", user); err != nil {
@@ -139,7 +139,7 @@ type PaginationLink struct {
 }
 type PaginationLinks []PaginationLink
 
-func dashboardHandler(w http.ResponseWriter, r *http.Request) {
+func userLinksHandler(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
 	userID := user["id"].(int32)
 
@@ -167,22 +167,22 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 	paginationLinks := PaginationLinks{
 		{
 			Text:     "first",
-			Href:     "/dashboard",
+			Href:     "/links",
 			Disabled: currentPage == 1,
 		},
 		{
 			Text:     "prev",
-			Href:     fmt.Sprintf("/dashboard?page=%d", currentPage-1),
+			Href:     fmt.Sprintf("/links?page=%d", currentPage-1),
 			Disabled: currentPage == 1,
 		},
 		{
 			Text:     "next",
-			Href:     fmt.Sprintf("/dashboard?page=%d", currentPage+1),
+			Href:     fmt.Sprintf("/links?page=%d", currentPage+1),
 			Disabled: currentPage == totalPages,
 		},
 		{
 			Text:     "last",
-			Href:     fmt.Sprintf("/dashboard?page=%d", totalPages),
+			Href:     fmt.Sprintf("/links?page=%d", totalPages),
 			Disabled: currentPage == totalPages,
 		},
 	}
@@ -193,7 +193,7 @@ func dashboardHandler(w http.ResponseWriter, r *http.Request) {
 		"paginationLinks": paginationLinks,
 	}
 
-	if err := t.ExecuteTemplate(w, "dashboard.html", data); err != nil {
+	if err := t.ExecuteTemplate(w, "links.html", data); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
@@ -309,7 +309,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/dashboard", http.StatusSeeOther)
+	http.Redirect(w, r, "/links", http.StatusSeeOther)
 }
 
 func main() {
@@ -358,7 +358,7 @@ func main() {
 	r.HandleFunc("/auth/{provider}/callback", oAuthCallbackHandler).Methods("GET")
 
 	// Private routes
-	r.Handle("/dashboard", privateRoute(http.HandlerFunc(dashboardHandler))).Methods("GET")
+	r.Handle("/links", privateRoute(http.HandlerFunc(userLinksHandler))).Methods("GET")
 	r.Handle("/links/new", privateRoute(http.HandlerFunc(CreateLinkHandler))).Methods("GET", "POST")
 
 	port, exists := os.LookupEnv("PORT")
