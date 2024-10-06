@@ -51,11 +51,11 @@
           id="url"
           max-length="2048"
 
-          {{ $destUrl := .validationErrors.Duplicates.DestinationUrl }}
+          {{ $destUrl := .validationErrors.FormFields.Url.Value }}
           value="{{ if $destUrl }}{{ $destUrl }}{{ end }}"
       />
-      {{ with .validationErrors.FormFields.url }}
-        <p>{{ . }}</p>
+      {{ with .validationErrors.FormFields.Url }}
+        <p>{{ .Message }}</p>
       {{ end }}
     </p>
     <p>
@@ -65,11 +65,13 @@
     </p>
     <p>
       <label for="title">Title (optional)</label>
-      <input type="text" name="title" id="title" />
+      {{ $title := .validationErrors.FormFields.Title.Value }}
+      <input type="text" name="title" id="title" value="{{ if $title }}{{ $title }}{{ end }}"/>
     </p>
     <p>
       <label for="notes">Notes (optional)</label>
-      <textarea name="notes" id="notes"></textarea>
+      {{ $notes := .validationErrors.FormFields.Notes.Value }}
+      <textarea name="notes" id="notes">{{ if $notes }}{{ $notes }}{{ end }}</textarea>
     </p>
     <button type="submit">Create Link</button>
   </form>

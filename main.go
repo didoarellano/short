@@ -215,8 +215,13 @@ type DuplicateUrls struct {
 	RemainingCount int32
 }
 
+type FormFieldValidation struct {
+	Message string
+	Value   string
+}
+
 type FormValidationErrors struct {
-	FormFields map[string]string
+	FormFields map[string]FormFieldValidation
 	Duplicates DuplicateUrls
 }
 
@@ -253,8 +258,17 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 	if formData.DestinationUrl == "" {
 		validationErrors := FormValidationErrors{
-			FormFields: map[string]string{
-				"url": "Destination URL is required",
+			FormFields: map[string]FormFieldValidation{
+				"Url": {
+					Value:   formData.DestinationUrl,
+					Message: "Destination URL is required",
+				},
+				"Title": {
+					Value: formData.Title,
+				},
+				"Notes": {
+					Value: formData.Notes,
+				},
 			},
 		}
 		session.AddFlash(validationErrors)
@@ -285,6 +299,17 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 			}
 			validationErrors := FormValidationErrors{
 				Duplicates: dupes,
+				FormFields: map[string]FormFieldValidation{
+					"Url": {
+						Value: formData.DestinationUrl,
+					},
+					"Title": {
+						Value: formData.Title,
+					},
+					"Notes": {
+						Value: formData.Notes,
+					},
+				},
 			}
 			session.AddFlash(validationErrors)
 			session.Save(r, w)
