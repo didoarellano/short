@@ -146,9 +146,14 @@ func userLinksHandler(w http.ResponseWriter, r *http.Request) {
 	// No page query param defaults to page 1
 	currentPage := 1
 	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
-		if parsedPage, err := strconv.Atoi(pageParam); err == nil && parsedPage > 0 {
+		if parsedPage, err := strconv.Atoi(pageParam); err == nil {
 			currentPage = parsedPage
 		}
+	}
+
+	if currentPage < 1 {
+		http.Redirect(w, r, "/links", http.StatusSeeOther)
+		return
 	}
 
 	links, err := queries.GetPaginatedLinksForUser(context.Background(), db.GetPaginatedLinksForUserParams{
@@ -164,6 +169,12 @@ func userLinksHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	totalPages := (int(links.TotalCount) + paginationLimit - 1) / paginationLimit
+
+	if currentPage > totalPages {
+		http.Redirect(w, r, fmt.Sprintf("/links?page=%d", totalPages), http.StatusSeeOther)
+		return
+	}
+
 	paginationLinks := PaginationLinks{
 		{
 			Text:     "first",
