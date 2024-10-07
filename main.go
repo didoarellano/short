@@ -389,6 +389,11 @@ func main() {
 	r.HandleFunc("/logout", logoutHandler).Methods("POST")
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 	r.HandleFunc("/auth/{provider}/callback", oAuthCallbackHandler).Methods("GET")
+	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := t.ExecuteTemplate(w, "404.html", nil); err != nil {
+			http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		}
+	})
 
 	// Private routes
 	r.Handle("/links", privateRoute(http.HandlerFunc(userLinksHandler))).Methods("GET")
