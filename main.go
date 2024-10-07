@@ -199,9 +199,10 @@ func userLinksHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 type FormData struct {
-	DestinationUrl string
-	Title          string
-	Notes          string
+	DestinationUrl  string
+	Title           string
+	Notes           string
+	CreateDuplicate bool
 }
 
 type DuplicateUrl struct {
@@ -216,8 +217,9 @@ type DuplicateUrls struct {
 }
 
 type FormFieldValidation struct {
-	Message string
-	Value   string
+	Message   string
+	Value     string
+	IsChecked bool
 }
 
 type FormValidationErrors struct {
@@ -251,9 +253,10 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 	formData := FormData{
-		DestinationUrl: strings.TrimSpace(r.FormValue("url")),
-		Title:          strings.TrimSpace(r.FormValue("title")),
-		Notes:          strings.TrimSpace(r.FormValue("notes")),
+		DestinationUrl:  strings.TrimSpace(r.FormValue("url")),
+		Title:           strings.TrimSpace(r.FormValue("title")),
+		Notes:           strings.TrimSpace(r.FormValue("notes")),
+		CreateDuplicate: r.FormValue("create-duplicate") == "on",
 	}
 
 	if formData.DestinationUrl == "" {
@@ -269,6 +272,9 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 				"Notes": {
 					Value: formData.Notes,
 				},
+				"CreateDuplicate": {
+					IsChecked: formData.CreateDuplicate,
+				},
 			},
 		}
 		session.AddFlash(validationErrors)
@@ -277,8 +283,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowDuplicate := r.FormValue("allow-duplicate") == "on"
-	if !allowDuplicate {
+	if !formData.CreateDuplicate {
 		links, _ := queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
 			UserID:         userID,
 			DestinationUrl: formData.DestinationUrl,
@@ -308,6 +313,9 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 					},
 					"Notes": {
 						Value: formData.Notes,
+					},
+					"CreateDuplicate": {
+						IsChecked: formData.CreateDuplicate,
 					},
 				},
 			}
