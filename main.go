@@ -243,8 +243,8 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		flashes := session.Flashes()
 		if len(flashes) > 0 {
-			if v, ok := flashes[0].(*FormValidationErrors); ok {
-				validationErrors = *v
+			if v, ok := flashes[0].(FormValidationErrors); ok {
+				validationErrors = v
 			}
 		}
 		data := map[string]interface{}{
@@ -355,8 +355,8 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	gob.Register(&FormValidationErrors{})
 	gob.Register(UserSession{})
+	gob.Register(FormValidationErrors{})
 	ctx := context.Background()
 
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
