@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/didoarellano/short/db"
+	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"

@@ -12,12 +12,12 @@ check_sqlc:
 ENV ?= dev
 migrate: check_atlas
 	@DB_URL=$$( [ "$(ENV)" = "prod" ] && echo "$(PROD_HOST_DB_URL)" || echo "$(DEV_HOST_DB_URL)" ); \
-	atlas schema apply --url $$DB_URL --to "file://db/schema.sql" --dev-url "docker://postgres/16/dev"
+	atlas schema apply --url $$DB_URL --to "file://migrations/schema.sql" --dev-url "docker://postgres/16/dev"
 
-db/db.go db/models.go db/queries.sql.go: db/schema.sql db/queries.sql | check_sqlc
+internal/db/db.go internal/db/models.go internal/db/queries.sql.go: migrations/schema.sql migrations/queries.sql | check_sqlc
 	sqlc generate
 
-db: db/db.go db/models.go db/queries.sql.go
+db: internal/db/db.go internal/db/models.go internal/db/queries.sql.go
 
 test:
 	go test ./...
