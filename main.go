@@ -31,16 +31,9 @@ var t = template.Must(template.ParseFS(resources, "templates/*"))
 var queries *db.Queries
 var sessionStore *redisstore.RedisStore
 
-type ContextKey string
-
-const UserContextKey ContextKey = "user"
-
-func authSessionMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := sessionStore.Get(r, "session")
-		ctx := context.WithValue(r.Context(), UserContextKey, session.Values)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
+type UserSession struct {
+	UserID   int32
+	Username string
 }
 
 func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
@@ -51,7 +44,7 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if session.Values["id"] != nil {
+	if session.Values["user"] != nil {
 		// user is already logged in
 		http.Redirect(w, r, "/links", http.StatusSeeOther)
 		return
@@ -76,8 +69,10 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session.Values["id"] = user.ID
-	session.Values["name"] = user.Name.String
+	session.Values["user"] = UserSession{
+		UserID:   user.ID,
+		Username: user.Name.String,
+	}
 	err = session.Save(r, w)
 
 	if err != nil {
@@ -92,7 +87,8 @@ func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 func privateRoute(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		session, _ := sessionStore.Get(r, "session")
-		if session.Values["id"] == nil {
+		user := session.Values["user"]
+		if user == nil {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -101,12 +97,13 @@ func privateRoute(next http.Handler) http.Handler {
 }
 
 func signinHandler(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(UserContextKey)
+	session, _ := sessionStore.Get(r, "session")
+	user := session.Values["user"]
 	if user != nil {
 		http.Redirect(w, r, "/links", http.StatusFound)
 		return
 	}
-	if err := t.ExecuteTemplate(w, "signin.html", user); err != nil {
+	if err := t.ExecuteTemplate(w, "signin.html", nil); err != nil {
 		http.Error(w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
@@ -140,8 +137,9 @@ type PaginationLink struct {
 type PaginationLinks []PaginationLink
 
 func userLinksHandler(w http.ResponseWriter, r *http.Request) {
-	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
-	userID := user["id"].(int32)
+	session, _ := sessionStore.Get(r, "session")
+	user := session.Values["user"].(UserSession)
+	userID := user.UserID
 
 	// No page query param defaults to page 1
 	currentPage := 1
@@ -259,8 +257,8 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := r.Context().Value(UserContextKey).(map[interface{}]interface{})
-	userID := user["id"].(int32)
+	user := session.Values["user"].(UserSession)
+	userID := user.UserID
 
 	r.ParseForm()
 	formData := FormData{
@@ -358,6 +356,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	gob.Register(&FormValidationErrors{})
+	gob.Register(UserSession{})
 	ctx := context.Background()
 
 	opt, err := redis.ParseURL(os.Getenv("REDIS_URL"))
@@ -387,7 +386,6 @@ func main() {
 	)
 
 	r := mux.NewRouter()
-	r.Use(authSessionMiddleware)
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
 			"greeting": "Hello world",
