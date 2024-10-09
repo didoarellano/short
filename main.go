@@ -62,23 +62,12 @@ func main() {
 	privateRoute := auth.PrivateRoute(sessionStore)
 
 	r := mux.NewRouter()
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		data := map[string]interface{}{
-			"greeting": "Hello world",
-		}
-		if err := t.ExecuteTemplate(w, "index.html", data); err != nil {
-			http.Error(w, "Failed to render template", http.StatusInternalServerError)
-		}
-	}).Methods("GET")
+	r.HandleFunc("/", renderStatic("index.html")).Methods("GET")
 	r.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
 	r.HandleFunc("/logout", auth.LogoutHandler(sessionStore)).Methods("POST")
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 	r.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
-	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if err := t.ExecuteTemplate(w, "404.html", nil); err != nil {
-			http.Error(w, "Failed to render template", http.StatusInternalServerError)
-		}
-	})
+	r.NotFoundHandler = renderStatic("404.html")
 
 	// Private routes
 	r.Handle("/links", privateRoute(http.HandlerFunc(
@@ -94,4 +83,12 @@ func main() {
 	}
 	log.Println("Server started on port " + port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
+}
+
+func renderStatic(template string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if err := t.ExecuteTemplate(w, template, nil); err != nil {
+			http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		}
+	}
 }
