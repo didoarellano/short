@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
 	"github.com/go-redis/redis/v8"
@@ -31,102 +32,6 @@ var t = template.Must(template.ParseFS(resources, "templates/*"))
 var queries *db.Queries
 var sessionStore *redisstore.RedisStore
 
-type UserSession struct {
-	UserID   int32
-	Username string
-}
-
-func oAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := sessionStore.Get(r, "session")
-	if err != nil {
-		log.Printf("Error retrieving session: %v", err)
-		http.Error(w, "Failed to retrieve session", http.StatusInternalServerError)
-		return
-	}
-
-	if session.Values["user"] != nil {
-		// user is already logged in
-		http.Redirect(w, r, "/links", http.StatusSeeOther)
-		return
-	}
-
-	gothUser, err := gothic.CompleteUserAuth(w, r)
-	if err != nil {
-		http.Error(w, "Authentication failed: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	user, err := queries.CreateOrUpdateUser(context.Background(), db.CreateOrUpdateUserParams{
-		Name:          pgtype.Text{String: gothUser.NickName, Valid: gothUser.NickName != ""},
-		Email:         gothUser.Email,
-		OauthProvider: pgtype.Text{String: gothUser.Provider, Valid: gothUser.Provider != ""},
-		Role:          "basic",
-	})
-
-	if err != nil {
-		log.Printf("Failed to create or update user: %v", err)
-		http.Error(w, "Failed to create or update user", http.StatusInternalServerError)
-		return
-	}
-
-	session.Values["user"] = UserSession{
-		UserID:   user.ID,
-		Username: user.Name.String,
-	}
-	err = session.Save(r, w)
-
-	if err != nil {
-		log.Fatal(err)
-		http.Error(w, "Failed to set session", http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/links", http.StatusSeeOther)
-}
-
-func privateRoute(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		session, _ := sessionStore.Get(r, "session")
-		user := session.Values["user"]
-		if user == nil {
-			http.Redirect(w, r, "/", http.StatusFound)
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
-func signinHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := sessionStore.Get(r, "session")
-	user := session.Values["user"]
-	if user != nil {
-		http.Redirect(w, r, "/links", http.StatusFound)
-		return
-	}
-	if err := t.ExecuteTemplate(w, "signin.html", nil); err != nil {
-		http.Error(w, "Failed to render template", http.StatusInternalServerError)
-	}
-}
-
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := sessionStore.Get(r, "session")
-	session.Options.MaxAge = -1
-	err := session.Save(r, w)
-
-	if err != nil {
-		log.Fatal("Failed to delete session", err)
-		return
-	}
-
-	err = gothic.Logout(w, r)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Logout failed: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	http.Redirect(w, r, "/", http.StatusSeeOther)
-}
-
 const paginationLimit int = 2
 
 type PaginationLink struct {
@@ -138,7 +43,7 @@ type PaginationLinks []PaginationLink
 
 func userLinksHandler(w http.ResponseWriter, r *http.Request) {
 	session, _ := sessionStore.Get(r, "session")
-	user := session.Values["user"].(UserSession)
+	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
 
 	// No page query param defaults to page 1
@@ -257,7 +162,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := session.Values["user"].(UserSession)
+	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
 
 	r.ParseForm()
@@ -355,7 +260,7 @@ func CreateLinkHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	gob.Register(UserSession{})
+	gob.Register(auth.UserSession{})
 	gob.Register(FormValidationErrors{})
 	ctx := context.Background()
 
@@ -385,6 +290,8 @@ func main() {
 		),
 	)
 
+	privateRoute := auth.PrivateRoute(sessionStore)
+
 	r := mux.NewRouter()
 	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		data := map[string]interface{}{
@@ -394,10 +301,10 @@ func main() {
 			http.Error(w, "Failed to render template", http.StatusInternalServerError)
 		}
 	}).Methods("GET")
-	r.HandleFunc("/signin", signinHandler).Methods("GET")
-	r.HandleFunc("/logout", logoutHandler).Methods("POST")
+	r.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
+	r.HandleFunc("/logout", auth.LogoutHandler(sessionStore)).Methods("POST")
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
-	r.HandleFunc("/auth/{provider}/callback", oAuthCallbackHandler).Methods("GET")
+	r.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
 	r.NotFoundHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := t.ExecuteTemplate(w, "404.html", nil); err != nil {
 			http.Error(w, "Failed to render template", http.StatusInternalServerError)
