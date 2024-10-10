@@ -64,7 +64,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", renderStatic("index.html")).Methods("GET")
 	r.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
-	r.HandleFunc("/logout", auth.LogoutHandler(sessionStore)).Methods("POST")
+	r.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
 	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
 	r.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
 	r.NotFoundHandler = renderStatic("404.html")

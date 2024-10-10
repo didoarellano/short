@@ -82,7 +82,7 @@ func SigninHandler(t *template.Template, sessionStore *redisstore.RedisStore) ht
 	}
 }
 
-func LogoutHandler(sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func SignoutHandler(sessionStore *redisstore.RedisStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := sessionStore.Get(r, "session")
 		session.Options.MaxAge = -1
