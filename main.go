@@ -76,6 +76,9 @@ func main() {
 	r.Handle("/links/new", privateRoute(http.HandlerFunc(
 		links.CreateLinkHandler(t, queries, sessionStore),
 	))).Methods("GET", "POST")
+	r.Handle("/links/{shortcode}", privateRoute(http.HandlerFunc(
+		links.UserLinkHandler(t, queries, sessionStore),
+	))).Methods("GET")
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {

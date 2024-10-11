@@ -16,6 +16,13 @@ INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: GetLinkForUser :one
+SELECT short_code, destination_url, title, notes
+FROM links
+WHERE user_id = $1
+AND short_code = $2
+LIMIT 1;
+
 -- name: GetPaginatedLinksForUser :one
 WITH paginated_links AS (
   SELECT short_code, destination_url, title, notes

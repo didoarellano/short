@@ -12,6 +12,7 @@ import (
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
+	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/rbcervilla/redisstore/v8"
 )
@@ -245,5 +246,34 @@ func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore *
 		}
 
 		http.Redirect(w, r, "/links", http.StatusSeeOther)
+	}
+}
+
+func UserLinkHandler(t *template.Template, queries *db.Queries, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		session, _ := sessionStore.Get(r, "session")
+		user := session.Values["user"].(auth.UserSession)
+		userID := user.UserID
+
+		link, err := queries.GetLinkForUser(context.Background(), db.GetLinkForUserParams{
+			UserID:    userID,
+			ShortCode: vars["shortcode"],
+		})
+
+		if err != nil {
+			log.Printf("Failed to retrieve link: %v", err)
+			http.Error(w, "Failed to retrieve link: %v", http.StatusInternalServerError)
+			return
+		}
+
+		data := map[string]interface{}{
+			"user": user,
+			"link": link,
+		}
+
+		if err := t.ExecuteTemplate(w, "link.html", data); err != nil {
+			http.Error(w, "Failed to render template", http.StatusInternalServerError)
+		}
 	}
 }

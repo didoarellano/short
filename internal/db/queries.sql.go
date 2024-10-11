@@ -120,6 +120,38 @@ func (q *Queries) FindDuplicatesForUrl(ctx context.Context, arg FindDuplicatesFo
 	return i, err
 }
 
+const getLinkForUser = `-- name: GetLinkForUser :one
+SELECT short_code, destination_url, title, notes
+FROM links
+WHERE user_id = $1
+AND short_code = $2
+LIMIT 1
+`
+
+type GetLinkForUserParams struct {
+	UserID    int32
+	ShortCode string
+}
+
+type GetLinkForUserRow struct {
+	ShortCode      string
+	DestinationUrl string
+	Title          pgtype.Text
+	Notes          pgtype.Text
+}
+
+func (q *Queries) GetLinkForUser(ctx context.Context, arg GetLinkForUserParams) (GetLinkForUserRow, error) {
+	row := q.db.QueryRow(ctx, getLinkForUser, arg.UserID, arg.ShortCode)
+	var i GetLinkForUserRow
+	err := row.Scan(
+		&i.ShortCode,
+		&i.DestinationUrl,
+		&i.Title,
+		&i.Notes,
+	)
+	return i, err
+}
+
 const getPaginatedLinksForUser = `-- name: GetPaginatedLinksForUser :one
 WITH paginated_links AS (
   SELECT short_code, destination_url, title, notes
