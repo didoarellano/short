@@ -121,7 +121,7 @@ func (q *Queries) FindDuplicatesForUrl(ctx context.Context, arg FindDuplicatesFo
 }
 
 const getLinkForUser = `-- name: GetLinkForUser :one
-SELECT short_code, destination_url, title, notes
+SELECT short_code, destination_url, title, notes, created_at, updated_at
 FROM links
 WHERE user_id = $1
 AND short_code = $2
@@ -138,6 +138,8 @@ type GetLinkForUserRow struct {
 	DestinationUrl string
 	Title          pgtype.Text
 	Notes          pgtype.Text
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
 }
 
 func (q *Queries) GetLinkForUser(ctx context.Context, arg GetLinkForUserParams) (GetLinkForUserRow, error) {
@@ -148,6 +150,8 @@ func (q *Queries) GetLinkForUser(ctx context.Context, arg GetLinkForUserParams) 
 		&i.DestinationUrl,
 		&i.Title,
 		&i.Notes,
+		&i.CreatedAt,
+		&i.UpdatedAt,
 	)
 	return i, err
 }

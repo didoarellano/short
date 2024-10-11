@@ -268,8 +268,9 @@ func UserLinkHandler(t *template.Template, queries *db.Queries, sessionStore *re
 		}
 
 		data := map[string]interface{}{
-			"user": user,
-			"link": link,
+			"user":       user,
+			"link":       link,
+			"wasUpdated": !link.CreatedAt.Time.Equal(link.UpdatedAt.Time),
 		}
 
 		if err := t.ExecuteTemplate(w, "link.html", data); err != nil {

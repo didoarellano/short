@@ -17,7 +17,7 @@ VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
 -- name: GetLinkForUser :one
-SELECT short_code, destination_url, title, notes
+SELECT short_code, destination_url, title, notes, created_at, updated_at
 FROM links
 WHERE user_id = $1
 AND short_code = $2

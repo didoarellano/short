@@ -44,6 +44,15 @@
       {{ with .Notes.String }}
         <p>{{ . }}</p>
       {{ end }}
+
+      {{ with .CreatedAt.Time }}
+        <p>Created on: {{ .Format "2 Jan 2006 at 3:04 PM" }}</p>
+      {{ end }}
+
+      {{ if $.wasUpdated }}
+        <p>Updated on: {{ .UpdatedAt.Time.Format "2 Jan 2006 at 3:04 PM" }}</p>
+      {{ end }}
+
     </div>
   {{ end }}
 
