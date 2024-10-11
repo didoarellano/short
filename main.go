@@ -59,33 +59,27 @@ func main() {
 		),
 	)
 
-	privateRoute := auth.PrivateRoute(sessionStore)
+	router := mux.NewRouter()
+	router.HandleFunc("/", renderStatic("index.html")).Methods("GET")
+	router.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
+	router.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
+	router.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
+	router.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
+	router.NotFoundHandler = renderStatic("404.html")
 
-	r := mux.NewRouter()
-	r.HandleFunc("/", renderStatic("index.html")).Methods("GET")
-	r.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
-	r.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
-	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
-	r.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
-	r.NotFoundHandler = renderStatic("404.html")
+	privateRouter := router.PathPrefix("/").Subrouter()
+	privateRouter.Use(auth.PrivateRoute(sessionStore))
 
-	// Private routes
-	r.Handle("/links", privateRoute(http.HandlerFunc(
-		links.UserLinksHandler(t, queries, sessionStore),
-	))).Methods("GET")
-	r.Handle("/links/new", privateRoute(http.HandlerFunc(
-		links.CreateLinkHandler(t, queries, sessionStore),
-	))).Methods("GET", "POST")
-	r.Handle("/links/{shortcode}", privateRoute(http.HandlerFunc(
-		links.UserLinkHandler(t, queries, sessionStore),
-	))).Methods("GET")
+	privateRouter.HandleFunc("/links", links.UserLinksHandler(t, queries, sessionStore)).Methods("GET")
+	privateRouter.HandleFunc("/links/new", links.CreateLinkHandler(t, queries, sessionStore)).Methods("GET", "POST")
+	privateRouter.HandleFunc("/links/{shortcode}", links.UserLinkHandler(t, queries, sessionStore)).Methods("GET")
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
 		port = "8080"
 	}
 	log.Println("Server started on port " + port)
-	log.Fatal(http.ListenAndServe(":"+port, r))
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
 
 func renderStatic(template string) http.HandlerFunc {
