@@ -59,27 +59,30 @@ func main() {
 		),
 	)
 
-	router := mux.NewRouter()
-	router.HandleFunc("/", renderStatic("index.html")).Methods("GET")
-	router.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
-	router.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
-	router.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
-	router.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
-	router.NotFoundHandler = renderStatic("404.html")
+	rootRouter := mux.NewRouter()
 
-	privateRouter := router.PathPrefix("/").Subrouter()
-	privateRouter.Use(auth.PrivateRoute(sessionStore))
 
-	privateRouter.HandleFunc("/links", links.UserLinksHandler(t, queries, sessionStore)).Methods("GET")
-	privateRouter.HandleFunc("/links/new", links.CreateLinkHandler(t, queries, sessionStore)).Methods("GET", "POST")
-	privateRouter.HandleFunc("/links/{shortcode}", links.UserLinkHandler(t, queries, sessionStore)).Methods("GET")
+	rootRouter.HandleFunc("/", renderStatic("index.html")).Methods("GET")
+	rootRouter.NotFoundHandler = renderStatic("404.html")
+
+	appRouter := rootRouter.PathPrefix("/app").Subrouter()
+	appRouter.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
+	appRouter.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
+	appRouter.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
+	appRouter.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
+
+	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
+	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
+	privateAppRouter.HandleFunc("/links", links.UserLinksHandler(t, queries, sessionStore)).Methods("GET")
+	privateAppRouter.HandleFunc("/links/new", links.CreateLinkHandler(t, queries, sessionStore)).Methods("GET", "POST")
+	privateAppRouter.HandleFunc("/links/{shortcode}", links.UserLinkHandler(t, queries, sessionStore)).Methods("GET")
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
 		port = "8080"
 	}
 	log.Println("Server started on port " + port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Fatal(http.ListenAndServe(":"+port, rootRouter))
 }
 
 func renderStatic(template string) http.HandlerFunc {

@@ -42,7 +42,7 @@ func UserLinksHandler(t *template.Template, queries *db.Queries, sessionStore se
 		}
 
 		if currentPage < 1 {
-			http.Redirect(w, r, "/links", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/links", http.StatusSeeOther)
 			return
 		}
 
@@ -61,29 +61,29 @@ func UserLinksHandler(t *template.Template, queries *db.Queries, sessionStore se
 		totalPages := (int(links.TotalCount) + paginationLimit - 1) / paginationLimit
 
 		if currentPage > totalPages {
-			http.Redirect(w, r, fmt.Sprintf("/links?page=%d", totalPages), http.StatusSeeOther)
+			http.Redirect(w, r, fmt.Sprintf("/app/links?page=%d", totalPages), http.StatusSeeOther)
 			return
 		}
 
 		paginationLinks := PaginationLinks{
 			{
 				Text:     "first",
-				Href:     "/links",
+				Href:     "/app/links",
 				Disabled: currentPage == 1,
 			},
 			{
 				Text:     "prev",
-				Href:     fmt.Sprintf("/links?page=%d", currentPage-1),
+				Href:     fmt.Sprintf("/app/links?page=%d", currentPage-1),
 				Disabled: currentPage == 1,
 			},
 			{
 				Text:     "next",
-				Href:     fmt.Sprintf("/links?page=%d", currentPage+1),
+				Href:     fmt.Sprintf("/app/links?page=%d", currentPage+1),
 				Disabled: currentPage == totalPages,
 			},
 			{
 				Text:     "last",
-				Href:     fmt.Sprintf("/links?page=%d", totalPages),
+				Href:     fmt.Sprintf("/app/links?page=%d", totalPages),
 				Disabled: currentPage == totalPages,
 			},
 		}
@@ -182,7 +182,7 @@ func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore s
 			}
 			session.AddFlash(validationErrors)
 			session.Save(r, w)
-			http.Redirect(w, r, "/links/new", http.StatusFound)
+			http.Redirect(w, r, "/app/links/new", http.StatusFound)
 			return
 		}
 
@@ -224,7 +224,7 @@ func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore s
 				}
 				session.AddFlash(validationErrors)
 				session.Save(r, w)
-				http.Redirect(w, r, "/links/new", http.StatusSeeOther)
+				http.Redirect(w, r, "/app/links/new", http.StatusSeeOther)
 				return
 			}
 		}
@@ -245,7 +245,7 @@ func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore s
 			return
 		}
 
-		http.Redirect(w, r, "/links", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/links", http.StatusSeeOther)
 	}
 }
 

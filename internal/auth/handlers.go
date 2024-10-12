@@ -29,7 +29,7 @@ func OAuthCallbackHandler(queries *db.Queries, sessionStore session.SessionStore
 
 		if session.Values["user"] != nil {
 			// user is already logged in
-			http.Redirect(w, r, "/links", http.StatusSeeOther)
+			http.Redirect(w, r, "/app/links", http.StatusSeeOther)
 			return
 		}
 
@@ -64,7 +64,7 @@ func OAuthCallbackHandler(queries *db.Queries, sessionStore session.SessionStore
 			return
 		}
 
-		http.Redirect(w, r, "/links", http.StatusSeeOther)
+		http.Redirect(w, r, "/app/links", http.StatusSeeOther)
 	}
 }
 
@@ -73,7 +73,7 @@ func SigninHandler(t *template.Template, sessionStore session.SessionStore) http
 		session, _ := sessionStore.Get(r, "session")
 		user := session.Values["user"]
 		if user != nil {
-			http.Redirect(w, r, "/links", http.StatusFound)
+			http.Redirect(w, r, "/app/links", http.StatusFound)
 			return
 		}
 		if err := t.ExecuteTemplate(w, "signin.html", nil); err != nil {
