@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/session"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/markbates/goth/gothic"
-	"github.com/rbcervilla/redisstore/v8"
 )
 
 type UserSession struct {
@@ -18,7 +18,7 @@ type UserSession struct {
 	Username string
 }
 
-func OAuthCallbackHandler(queries *db.Queries, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func OAuthCallbackHandler(queries *db.Queries, sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, err := sessionStore.Get(r, "session")
 		if err != nil {
@@ -68,7 +68,7 @@ func OAuthCallbackHandler(queries *db.Queries, sessionStore *redisstore.RedisSto
 	}
 }
 
-func SigninHandler(t *template.Template, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func SigninHandler(t *template.Template, sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := sessionStore.Get(r, "session")
 		user := session.Values["user"]
@@ -82,7 +82,7 @@ func SigninHandler(t *template.Template, sessionStore *redisstore.RedisStore) ht
 	}
 }
 
-func SignoutHandler(sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func SignoutHandler(sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := sessionStore.Get(r, "session")
 		session.Options.MaxAge = -1

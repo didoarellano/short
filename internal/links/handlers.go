@@ -11,10 +11,10 @@ import (
 
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/shortcode"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
-	"github.com/rbcervilla/redisstore/v8"
 )
 
 const paginationLimit int = 2
@@ -27,7 +27,7 @@ type PaginationLink struct {
 
 type PaginationLinks []PaginationLink
 
-func UserLinksHandler(t *template.Template, queries *db.Queries, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func UserLinksHandler(t *template.Template, queries *db.Queries, sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		session, _ := sessionStore.Get(r, "session")
 		user := session.Values["user"].(auth.UserSession)
@@ -129,7 +129,7 @@ type FormValidationErrors struct {
 	Duplicates DuplicateUrls
 }
 
-func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var validationErrors FormValidationErrors
 		session, _ := sessionStore.Get(r, "session")
@@ -249,7 +249,7 @@ func CreateLinkHandler(t *template.Template, queries *db.Queries, sessionStore *
 	}
 }
 
-func UserLinkHandler(t *template.Template, queries *db.Queries, sessionStore *redisstore.RedisStore) http.HandlerFunc {
+func UserLinkHandler(t *template.Template, queries *db.Queries, sessionStore session.SessionStore) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		session, _ := sessionStore.Get(r, "session")
