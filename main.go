@@ -13,6 +13,7 @@ import (
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/links"
+	"github.com/didoarellano/short/internal/redirector"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -54,6 +55,8 @@ func main() {
 	t := templ.New(stdtemplate, config.AppData)
 
 	rootRouter := mux.NewRouter()
+
+	rootRouter.HandleFunc("/{shortcode}", redirector.RedirectHandler(queries)).Methods("GET")
 
 	rootRouter.HandleFunc("/", t.RenderStatic("index.html")).Methods("GET")
 	rootRouter.NotFoundHandler = t.RenderStatic("404.html")

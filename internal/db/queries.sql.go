@@ -120,6 +120,20 @@ func (q *Queries) FindDuplicatesForUrl(ctx context.Context, arg FindDuplicatesFo
 	return i, err
 }
 
+const getDestinationUrl = `-- name: GetDestinationUrl :one
+SELECT destination_url
+FROM links
+WHERE short_code = $1
+LIMIT 1
+`
+
+func (q *Queries) GetDestinationUrl(ctx context.Context, shortCode string) (string, error) {
+	row := q.db.QueryRow(ctx, getDestinationUrl, shortCode)
+	var destination_url string
+	err := row.Scan(&destination_url)
+	return destination_url, err
+}
+
 const getLinkForUser = `-- name: GetLinkForUser :one
 SELECT short_code, destination_url, title, notes, created_at, updated_at
 FROM links

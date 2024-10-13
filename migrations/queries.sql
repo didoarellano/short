@@ -16,6 +16,12 @@ INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;
 
+-- name: GetDestinationUrl :one
+SELECT destination_url
+FROM links
+WHERE short_code = $1
+LIMIT 1;
+
 -- name: GetLinkForUser :one
 SELECT short_code, destination_url, title, notes, created_at, updated_at
 FROM links
