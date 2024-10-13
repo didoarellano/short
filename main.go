@@ -15,9 +15,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/google"
 	"github.com/rbcervilla/redisstore/v8"
 )
 
@@ -51,13 +48,7 @@ func main() {
 	defer pg_conn.Close(ctx)
 	queries = db.New(pg_conn)
 
-	goth.UseProviders(
-		google.New(
-			os.Getenv("GOOGLE_CLIENT_ID"),
-			os.Getenv("GOOGLE_CLIENT_SECRET"),
-			os.Getenv("GOOGLE_REDIRECT_URL"),
-		),
-	)
+	auth.Initialise()
 
 	rootRouter := mux.NewRouter()
 
@@ -69,7 +60,7 @@ func main() {
 	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore)
 	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
 	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
-	appRouter.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
+	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")
 	appRouter.HandleFunc("/auth/{provider}/callback", authHandlers.OAuthCallback).Methods("GET")
 
 	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore)

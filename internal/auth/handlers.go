@@ -27,6 +27,10 @@ func NewAuthHandlers(t *template.Template, q *db.Queries, s session.SessionStore
 	}
 }
 
+func (ah *AuthHandler) BeginAuth(w http.ResponseWriter, r *http.Request) {
+	gothic.BeginAuthHandler(w, r)
+}
+
 type UserSession struct {
 	UserID   int32
 	Username string
