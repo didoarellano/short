@@ -3,7 +3,6 @@ package links
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 	"strconv"
@@ -13,17 +12,18 @@ import (
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/shortcode"
+	"github.com/didoarellano/short/internal/templ"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type LinkHandler struct {
-	template     *template.Template
+	template     *templ.Templ
 	queries      *db.Queries
 	sessionStore session.SessionStore
 }
 
-func NewLinkHandlers(t *template.Template, q *db.Queries, s session.SessionStore) *LinkHandler {
+func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore) *LinkHandler {
 	return &LinkHandler{
 		template:     t,
 		queries:      q,

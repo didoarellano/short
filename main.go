@@ -10,8 +10,10 @@ import (
 	"os"
 
 	"github.com/didoarellano/short/internal/auth"
+	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/links"
+	"github.com/didoarellano/short/internal/templ"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5"
@@ -20,7 +22,7 @@ import (
 
 //go:embed templates/*
 var resources embed.FS
-var t = template.Must(template.ParseFS(resources, "templates/*"))
+var stdtemplate = template.Must(template.ParseFS(resources, "templates/*"))
 
 var queries *db.Queries
 var sessionStore *redisstore.RedisStore
@@ -49,15 +51,15 @@ func main() {
 	queries = db.New(pg_conn)
 
 	auth.Initialise()
+	t := templ.New(stdtemplate, config.AppData)
 
 	rootRouter := mux.NewRouter()
 
+	rootRouter.HandleFunc("/", t.RenderStatic("index.html")).Methods("GET")
+	rootRouter.NotFoundHandler = t.RenderStatic("404.html")
 
-	rootRouter.HandleFunc("/", renderStatic("index.html")).Methods("GET")
-	rootRouter.NotFoundHandler = renderStatic("404.html")
-
-	appRouter := rootRouter.PathPrefix("/app").Subrouter()
 	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore)
+	appRouter := rootRouter.PathPrefix(config.AppData.AppPathPrefix).Subrouter()
 	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
 	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
 	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")
@@ -76,12 +78,4 @@ func main() {
 	}
 	log.Println("Server started on port " + port)
 	log.Fatal(http.ListenAndServe(":"+port, rootRouter))
-}
-
-func renderStatic(template string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if err := t.ExecuteTemplate(w, template, nil); err != nil {
-			http.Error(w, "Failed to render template", http.StatusInternalServerError)
-		}
-	}
 }

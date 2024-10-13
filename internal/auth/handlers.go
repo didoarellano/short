@@ -3,23 +3,23 @@ package auth
 import (
 	"context"
 	"fmt"
-	"html/template"
 	"log"
 	"net/http"
 
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
+	"github.com/didoarellano/short/internal/templ"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/markbates/goth/gothic"
 )
 
 type AuthHandler struct {
-	template     *template.Template
+	template     *templ.Templ
 	queries      *db.Queries
 	sessionStore session.SessionStore
 }
 
-func NewAuthHandlers(t *template.Template, q *db.Queries, s session.SessionStore) *AuthHandler {
+func NewAuthHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore) *AuthHandler {
 	return &AuthHandler{
 		template:     t,
 		queries:      q,
