@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/templ"
@@ -46,7 +47,7 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	if session.Values["user"] != nil {
 		// user is already logged in
-		http.Redirect(w, r, "/app/links", http.StatusSeeOther)
+		http.Redirect(w, r, "/"+config.AppData.AppPathPrefix+"/links", http.StatusSeeOther)
 		return
 	}
 
@@ -81,14 +82,14 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/app/links", http.StatusSeeOther)
+	http.Redirect(w, r, "/"+config.AppData.AppPathPrefix+"/links", http.StatusSeeOther)
 }
 
 func (ah *AuthHandler) Signin(w http.ResponseWriter, r *http.Request) {
 	session, _ := ah.sessionStore.Get(r, "session")
 	user := session.Values["user"]
 	if user != nil {
-		http.Redirect(w, r, "/app/links", http.StatusFound)
+		http.Redirect(w, r, "/"+config.AppData.AppPathPrefix+"/links", http.StatusSeeOther)
 		return
 	}
 	if err := ah.template.ExecuteTemplate(w, "signin.html", nil); err != nil {

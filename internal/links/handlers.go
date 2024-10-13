@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/didoarellano/short/internal/auth"
+	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/shortcode"
@@ -45,6 +46,7 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 	session, _ := lh.sessionStore.Get(r, "session")
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
+	basePath := "/" + config.AppData.AppPathPrefix + "/links"
 
 	// No page query param defaults to page 1
 	currentPage := 1
@@ -55,7 +57,7 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if currentPage < 1 {
-		http.Redirect(w, r, "/app/links", http.StatusSeeOther)
+		http.Redirect(w, r, basePath, http.StatusSeeOther)
 		return
 	}
 
@@ -74,29 +76,29 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 	totalPages := (int(links.TotalCount) + paginationLimit - 1) / paginationLimit
 
 	if currentPage > totalPages {
-		http.Redirect(w, r, fmt.Sprintf("/app/links?page=%d", totalPages), http.StatusSeeOther)
+		http.Redirect(w, r, fmt.Sprintf("%s?page=%d", basePath, totalPages), http.StatusSeeOther)
 		return
 	}
 
 	paginationLinks := PaginationLinks{
 		{
 			Text:     "first",
-			Href:     "/app/links",
+			Href:     basePath,
 			Disabled: currentPage == 1,
 		},
 		{
 			Text:     "prev",
-			Href:     fmt.Sprintf("/app/links?page=%d", currentPage-1),
+			Href:     fmt.Sprintf("%s?page=%d", basePath, currentPage-1),
 			Disabled: currentPage == 1,
 		},
 		{
 			Text:     "next",
-			Href:     fmt.Sprintf("/app/links?page=%d", currentPage+1),
+			Href:     fmt.Sprintf("%s?page=%d", basePath, currentPage+1),
 			Disabled: currentPage == totalPages,
 		},
 		{
 			Text:     "last",
-			Href:     fmt.Sprintf("/app/links?page=%d", totalPages),
+			Href:     fmt.Sprintf("%s?page=%d", basePath, totalPages),
 			Disabled: currentPage == totalPages,
 		},
 	}
@@ -144,6 +146,7 @@ type FormValidationErrors struct {
 func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	var validationErrors FormValidationErrors
 	session, _ := lh.sessionStore.Get(r, "session")
+	basePath := "/" + config.AppData.AppPathPrefix + "/links"
 
 	if r.Method == "GET" {
 		flashes := session.Flashes()
@@ -193,7 +196,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		}
 		session.AddFlash(validationErrors)
 		session.Save(r, w)
-		http.Redirect(w, r, "/app/links/new", http.StatusFound)
+		http.Redirect(w, r, basePath+"/new", http.StatusFound)
 		return
 	}
 
@@ -211,7 +214,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 			}
 			for _, shortcode := range links.ShortCodes {
 				url := DuplicateUrl{
-					Href: "/links/" + shortcode,
+					Href: basePath + "/" + shortcode,
 					Text: shortcode,
 				}
 				dupes.Urls = append(dupes.Urls, url)
@@ -235,7 +238,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 			}
 			session.AddFlash(validationErrors)
 			session.Save(r, w)
-			http.Redirect(w, r, "/app/links/new", http.StatusSeeOther)
+			http.Redirect(w, r, basePath+"/new", http.StatusSeeOther)
 			return
 		}
 	}
@@ -256,7 +259,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.Redirect(w, r, "/app/links", http.StatusSeeOther)
+	http.Redirect(w, r, basePath, http.StatusSeeOther)
 }
 
 func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {

@@ -59,7 +59,7 @@ func main() {
 	rootRouter.NotFoundHandler = t.RenderStatic("404.html")
 
 	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore)
-	appRouter := rootRouter.PathPrefix(config.AppData.AppPathPrefix).Subrouter()
+	appRouter := rootRouter.PathPrefix("/" + config.AppData.AppPathPrefix).Subrouter()
 	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
 	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
 	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")
