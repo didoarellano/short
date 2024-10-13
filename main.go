@@ -66,16 +66,18 @@ func main() {
 	rootRouter.NotFoundHandler = renderStatic("404.html")
 
 	appRouter := rootRouter.PathPrefix("/app").Subrouter()
-	appRouter.HandleFunc("/signin", auth.SigninHandler(t, sessionStore)).Methods("GET")
-	appRouter.HandleFunc("/signout", auth.SignoutHandler(sessionStore)).Methods("POST")
+	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore)
+	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
+	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
 	appRouter.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler).Methods("GET")
-	appRouter.HandleFunc("/auth/{provider}/callback", auth.OAuthCallbackHandler(queries, sessionStore)).Methods("GET")
+	appRouter.HandleFunc("/auth/{provider}/callback", authHandlers.OAuthCallback).Methods("GET")
 
+	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore)
 	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
 	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
-	privateAppRouter.HandleFunc("/links", links.UserLinksHandler(t, queries, sessionStore)).Methods("GET")
-	privateAppRouter.HandleFunc("/links/new", links.CreateLinkHandler(t, queries, sessionStore)).Methods("GET", "POST")
-	privateAppRouter.HandleFunc("/links/{shortcode}", links.UserLinkHandler(t, queries, sessionStore)).Methods("GET")
+	privateAppRouter.HandleFunc("/links", linkHandlers.UserLinks).Methods("GET")
+	privateAppRouter.HandleFunc("/links/new", linkHandlers.CreateLink).Methods("GET", "POST")
+	privateAppRouter.HandleFunc("/links/{shortcode}", linkHandlers.UserLink).Methods("GET")
 
 	port, exists := os.LookupEnv("PORT")
 	if !exists {
