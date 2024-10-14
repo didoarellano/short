@@ -72,7 +72,7 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 
 	totalPages := (int(links.TotalCount) + paginationLimit - 1) / paginationLimit
 
-	if currentPage > totalPages {
+	if totalPages > 0 && currentPage > totalPages {
 		http.Redirect(w, r, fmt.Sprintf("%s?page=%d", basePath, totalPages), http.StatusSeeOther)
 		return
 	}
