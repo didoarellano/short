@@ -2,10 +2,28 @@ CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   name TEXT,
   email TEXT UNIQUE NOT NULL,
-  role TEXT NOT NULL CHECK(role IN ('basic', 'pro', 'admin')) DEFAULT 'basic',
   oauth_provider TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE subscriptions (
+  id SERIAL PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  max_links_per_month INT NOT NULL,
+  can_customise_path BOOLEAN NOT NULL DEFAULT FALSE,
+  can_create_duplicates BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE user_subscriptions (
+  user_id INT NOT NULL REFERENCES users(id),
+  subscription_id INT NOT NULL REFERENCES subscriptions(id),
+  status TEXT NOT NULL CHECK(status IN ('active', 'expired')) DEFAULT 'active',
+  start_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+  end_date TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE links (
@@ -18,4 +36,4 @@ CREATE TABLE links (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-)
+);

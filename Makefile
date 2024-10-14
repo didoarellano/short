@@ -14,6 +14,10 @@ migrate: check_atlas
 	@DB_URL=$$( [ "$(ENV)" = "prod" ] && echo "$(PROD_HOST_DB_URL)" || echo "$(DEV_HOST_DB_URL)" ); \
 	atlas schema apply --url $$DB_URL --to "file://migrations/schema.sql" --dev-url "docker://postgres/16/dev"
 
+seed:
+	@DB_URL=$$( [ "$(ENV)" = "prod" ] && echo "$(PROD_HOST_DB_URL)" || echo "$(DEV_HOST_DB_URL)" ); \
+	psql $$DB_URL -f migrations/seed.sql
+
 internal/db/db.go internal/db/models.go internal/db/queries.sql.go: migrations/schema.sql migrations/queries.sql | check_sqlc
 	sqlc generate
 
@@ -22,4 +26,4 @@ db: internal/db/db.go internal/db/models.go internal/db/queries.sql.go
 test:
 	go test ./...
 
-.PHONY: check_atlas check_sqlc migrate db test
+.PHONY: check_atlas check_sqlc migrate seed db test
