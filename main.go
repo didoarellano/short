@@ -37,9 +37,9 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	redis_client := redis.NewClient(opt)
+	redisClient := redis.NewClient(opt)
 
-	sessionStore, err = redisstore.NewRedisStore(ctx, redis_client)
+	sessionStore, err = redisstore.NewRedisStore(ctx, redisClient)
 	if err != nil {
 		log.Fatal("Faled to create redis store", err)
 	}
@@ -56,7 +56,7 @@ func main() {
 
 	rootRouter := mux.NewRouter()
 
-	rootRouter.HandleFunc("/{shortcode}", redirector.RedirectHandler(queries)).Methods("GET")
+	rootRouter.HandleFunc("/{shortcode}", redirector.RedirectHandler(queries, redisClient)).Methods("GET")
 
 	rootRouter.HandleFunc("/", t.RenderStatic("index.html")).Methods("GET")
 	rootRouter.NotFoundHandler = t.RenderStatic("404.html")
