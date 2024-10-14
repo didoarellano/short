@@ -10,6 +10,7 @@ import (
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/templ"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/markbates/goth/gothic"
 )
@@ -57,17 +58,26 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := ah.queries.CreateOrUpdateUser(context.Background(), db.CreateOrUpdateUserParams{
-		Name:          pgtype.Text{String: gothUser.NickName, Valid: gothUser.NickName != ""},
-		Email:         gothUser.Email,
-		OauthProvider: pgtype.Text{String: gothUser.Provider, Valid: gothUser.Provider != ""},
-		Role:          "basic",
-	})
+	ctx := context.Background()
 
-	if err != nil {
-		log.Printf("Failed to create or update user: %v", err)
-		http.Error(w, "Failed to create or update user", http.StatusInternalServerError)
-		return
+	user, err := ah.queries.GetUserByEmail(ctx, gothUser.Email)
+	if err == pgx.ErrNoRows {
+		newUser, err := ah.queries.CreateUser(ctx, db.CreateUserParams{
+			Name:          pgtype.Text{String: gothUser.NickName, Valid: gothUser.NickName != ""},
+			Email:         gothUser.Email,
+			OauthProvider: pgtype.Text{String: gothUser.Provider, Valid: gothUser.Provider != ""},
+			Role:          "basic",
+		})
+
+		if err != nil {
+			log.Printf("Failed to create user: %v", err)
+			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			return
+		}
+
+		// Workaround for sqlc not generating a shared type for GetUserByEmail and CreateUser queries.
+		// Make sure the two queries in queries.sql always return the same columns.
+		user = db.GetUserByEmailRow(newUser)
 	}
 
 	session.Values["user"] = UserSession{

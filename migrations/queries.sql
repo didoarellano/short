@@ -2,14 +2,15 @@
 SELECT * FROM users
 WHERE id = $1 LIMIT 1;
 
--- name: CreateOrUpdateUser :one
+-- name: GetUserByEmail :one
+SELECT id, name, email
+FROM users
+WHERE email = $1;
+
+-- name: CreateUser :one
 INSERT INTO users (name, email, role, oauth_provider)
 VALUES ($1, $2, $4, $3)
-ON CONFLICT(email) DO UPDATE SET
-name = excluded.name,
-oauth_provider = excluded.oauth_provider,
-updated_at = CURRENT_TIMESTAMP
-RETURNING *;
+RETURNING id, name, email;
 
 -- name: CreateLink :one
 INSERT INTO links (user_id, short_code, destination_url, title, notes)

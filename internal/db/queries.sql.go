@@ -47,40 +47,34 @@ func (q *Queries) CreateLink(ctx context.Context, arg CreateLinkParams) (Link, e
 	return i, err
 }
 
-const createOrUpdateUser = `-- name: CreateOrUpdateUser :one
+const createUser = `-- name: CreateUser :one
 INSERT INTO users (name, email, role, oauth_provider)
 VALUES ($1, $2, $4, $3)
-ON CONFLICT(email) DO UPDATE SET
-name = excluded.name,
-oauth_provider = excluded.oauth_provider,
-updated_at = CURRENT_TIMESTAMP
-RETURNING id, name, email, role, oauth_provider, created_at, updated_at
+RETURNING id, name, email
 `
 
-type CreateOrUpdateUserParams struct {
+type CreateUserParams struct {
 	Name          pgtype.Text
 	Email         string
 	OauthProvider pgtype.Text
 	Role          string
 }
 
-func (q *Queries) CreateOrUpdateUser(ctx context.Context, arg CreateOrUpdateUserParams) (User, error) {
-	row := q.db.QueryRow(ctx, createOrUpdateUser,
+type CreateUserRow struct {
+	ID    int32
+	Name  pgtype.Text
+	Email string
+}
+
+func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
+	row := q.db.QueryRow(ctx, createUser,
 		arg.Name,
 		arg.Email,
 		arg.OauthProvider,
 		arg.Role,
 	)
-	var i User
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.Email,
-		&i.Role,
-		&i.OauthProvider,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-	)
+	var i CreateUserRow
+	err := row.Scan(&i.ID, &i.Name, &i.Email)
 	return i, err
 }
 
@@ -230,5 +224,24 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 		&i.CreatedAt,
 		&i.UpdatedAt,
 	)
+	return i, err
+}
+
+const getUserByEmail = `-- name: GetUserByEmail :one
+SELECT id, name, email
+FROM users
+WHERE email = $1
+`
+
+type GetUserByEmailRow struct {
+	ID    int32
+	Name  pgtype.Text
+	Email string
+}
+
+func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEmailRow, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
+	var i GetUserByEmailRow
+	err := row.Scan(&i.ID, &i.Name, &i.Email)
 	return i, err
 }
