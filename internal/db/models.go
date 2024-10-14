@@ -19,12 +19,30 @@ type Link struct {
 	UpdatedAt      pgtype.Timestamp
 }
 
+type Subscription struct {
+	ID                  int32
+	Name                string
+	MaxLinksPerMonth    int32
+	CanCustomisePath    bool
+	CanCreateDuplicates bool
+	CreatedAt           pgtype.Timestamp
+	UpdatedAt           pgtype.Timestamp
+}
+
 type User struct {
 	ID            int32
 	Name          pgtype.Text
 	Email         string
-	Role          string
 	OauthProvider pgtype.Text
 	CreatedAt     pgtype.Timestamp
 	UpdatedAt     pgtype.Timestamp
+}
+
+type UserSubscription struct {
+	UserID         int32
+	SubscriptionID int32
+	Status         string
+	StartDate      pgtype.Timestamp
+	EndDate        pgtype.Timestamp
+	CreatedAt      pgtype.Timestamp
 }

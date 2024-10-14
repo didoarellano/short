@@ -11,6 +11,21 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+const addBasicSubscription = `-- name: AddBasicSubscription :one
+INSERT INTO user_subscriptions
+  (user_id, subscription_id, end_date)
+VALUES
+  ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
+RETURNING end_date
+`
+
+func (q *Queries) AddBasicSubscription(ctx context.Context, userID int32) (pgtype.Timestamp, error) {
+	row := q.db.QueryRow(ctx, addBasicSubscription, userID)
+	var end_date pgtype.Timestamp
+	err := row.Scan(&end_date)
+	return end_date, err
+}
+
 const createLink = `-- name: CreateLink :one
 INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
@@ -48,8 +63,8 @@ func (q *Queries) CreateLink(ctx context.Context, arg CreateLinkParams) (Link, e
 }
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (name, email, role, oauth_provider)
-VALUES ($1, $2, $4, $3)
+INSERT INTO users (name, email, oauth_provider)
+VALUES ($1, $2, $3)
 RETURNING id, name, email
 `
 
@@ -57,7 +72,6 @@ type CreateUserParams struct {
 	Name          pgtype.Text
 	Email         string
 	OauthProvider pgtype.Text
-	Role          string
 }
 
 type CreateUserRow struct {
@@ -67,12 +81,7 @@ type CreateUserRow struct {
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (CreateUserRow, error) {
-	row := q.db.QueryRow(ctx, createUser,
-		arg.Name,
-		arg.Email,
-		arg.OauthProvider,
-		arg.Role,
-	)
+	row := q.db.QueryRow(ctx, createUser, arg.Name, arg.Email, arg.OauthProvider)
 	var i CreateUserRow
 	err := row.Scan(&i.ID, &i.Name, &i.Email)
 	return i, err
@@ -208,7 +217,7 @@ func (q *Queries) GetPaginatedLinksForUser(ctx context.Context, arg GetPaginated
 }
 
 const getUser = `-- name: GetUser :one
-SELECT id, name, email, role, oauth_provider, created_at, updated_at FROM users
+SELECT id, name, email, oauth_provider, created_at, updated_at FROM users
 WHERE id = $1 LIMIT 1
 `
 
@@ -219,7 +228,6 @@ func (q *Queries) GetUser(ctx context.Context, id int32) (User, error) {
 		&i.ID,
 		&i.Name,
 		&i.Email,
-		&i.Role,
 		&i.OauthProvider,
 		&i.CreatedAt,
 		&i.UpdatedAt,

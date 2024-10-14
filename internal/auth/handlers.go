@@ -59,14 +59,18 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := context.Background()
-
 	user, err := ah.queries.GetUserByEmail(ctx, gothUser.Email)
+
+	if err != nil {
+		log.Printf("Failed to query user: %v", err)
+		http.Error(w, "Failed to query user", http.StatusInternalServerError)
+	}
+
 	if err == pgx.ErrNoRows {
 		newUser, err := ah.queries.CreateUser(ctx, db.CreateUserParams{
 			Name:          pgtype.Text{String: gothUser.NickName, Valid: gothUser.NickName != ""},
 			Email:         gothUser.Email,
 			OauthProvider: pgtype.Text{String: gothUser.Provider, Valid: gothUser.Provider != ""},
-			Role:          "basic",
 		})
 
 		if err != nil {
@@ -78,6 +82,13 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		// Workaround for sqlc not generating a shared type for GetUserByEmail and CreateUser queries.
 		// Make sure the two queries in queries.sql always return the same columns.
 		user = db.GetUserByEmailRow(newUser)
+
+		_, err = ah.queries.AddBasicSubscription(ctx, user.ID)
+		if err != nil {
+			log.Println("Adding basic subscription to user failed", err)
+			http.Error(w, "Adding basic subscription to user failed", http.StatusInternalServerError)
+			return
+		}
 	}
 
 	session.Values["user"] = UserSession{

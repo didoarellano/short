@@ -8,9 +8,16 @@ FROM users
 WHERE email = $1;
 
 -- name: CreateUser :one
-INSERT INTO users (name, email, role, oauth_provider)
-VALUES ($1, $2, $4, $3)
+INSERT INTO users (name, email, oauth_provider)
+VALUES ($1, $2, $3)
 RETURNING id, name, email;
+
+-- name: AddBasicSubscription :one
+INSERT INTO user_subscriptions
+  (user_id, subscription_id, end_date)
+VALUES
+  ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
+RETURNING end_date;
 
 -- name: CreateLink :one
 INSERT INTO links (user_id, short_code, destination_url, title, notes)
