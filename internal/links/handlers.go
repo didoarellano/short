@@ -6,16 +6,13 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
-	"github.com/didoarellano/short/internal/shortcode"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type LinkHandler struct {
@@ -114,145 +111,29 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-type FormData struct {
-	DestinationUrl  string
-	Title           string
-	Notes           string
-	CreateDuplicate bool
-}
-
-type DuplicateUrl struct {
-	Text string
-	Href string
-}
-
-type DuplicateUrls struct {
-	Urls           []DuplicateUrl
-	DestinationUrl string
-	RemainingCount int32
-}
-
-type FormFieldValidation struct {
-	Message   string
-	Value     string
-	IsChecked bool
-}
-
-type FormValidationErrors struct {
-	FormFields map[string]FormFieldValidation
-	Duplicates DuplicateUrls
-}
-
 func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
-	var validationErrors FormValidationErrors
 	session, _ := lh.sessionStore.Get(r, "session")
 	basePath := "/" + config.AppData.AppPathPrefix + "/links"
 
 	if r.Method == "GET" {
-		flashes := session.Flashes()
-		if len(flashes) > 0 {
-			if v, ok := flashes[0].(FormValidationErrors); ok {
-				validationErrors = v
-			}
-		}
-		data := map[string]interface{}{
-			"validationErrors": validationErrors,
-		}
-		session.Save(r, w)
-		if err := lh.template.ExecuteTemplate(w, "create_link.html", data); err != nil {
-			http.Error(w, "Failed to render template", http.StatusInternalServerError)
-		}
+		ShowCreateForm(w, r, session, lh.template)
 		return
 	}
 
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
 
-	r.ParseForm()
-	formData := FormData{
-		DestinationUrl:  strings.TrimSpace(r.FormValue("url")),
-		Title:           strings.TrimSpace(r.FormValue("title")),
-		Notes:           strings.TrimSpace(r.FormValue("notes")),
-		CreateDuplicate: r.FormValue("create-duplicate") == "on",
-	}
+	formData := ParseCreateForm(r)
+	validatedForm := ValidateCreateForm(lh.queries, userID, formData)
 
-	if formData.DestinationUrl == "" {
-		validationErrors := FormValidationErrors{
-			FormFields: map[string]FormFieldValidation{
-				"Url": {
-					Value:   formData.DestinationUrl,
-					Message: "Destination URL is required",
-				},
-				"Title": {
-					Value: formData.Title,
-				},
-				"Notes": {
-					Value: formData.Notes,
-				},
-				"CreateDuplicate": {
-					IsChecked: formData.CreateDuplicate,
-				},
-			},
-		}
-		session.AddFlash(validationErrors)
+	if !validatedForm.IsValid {
+		session.AddFlash(validatedForm.Errors)
 		session.Save(r, w)
 		http.Redirect(w, r, basePath+"/new", http.StatusFound)
 		return
 	}
 
-	if !formData.CreateDuplicate {
-		links, _ := lh.queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
-			UserID:         userID,
-			DestinationUrl: formData.DestinationUrl,
-			Limit:          3,
-		})
-
-		if len(links.ShortCodes) > 0 {
-			dupes := DuplicateUrls{
-				DestinationUrl: formData.DestinationUrl,
-				RemainingCount: links.RemainingCount,
-			}
-			for _, shortcode := range links.ShortCodes {
-				url := DuplicateUrl{
-					Href: basePath + "/" + shortcode,
-					Text: shortcode,
-				}
-				dupes.Urls = append(dupes.Urls, url)
-			}
-			validationErrors := FormValidationErrors{
-				Duplicates: dupes,
-				FormFields: map[string]FormFieldValidation{
-					"Url": {
-						Value: formData.DestinationUrl,
-					},
-					"Title": {
-						Value: formData.Title,
-					},
-					"Notes": {
-						Value: formData.Notes,
-					},
-					"CreateDuplicate": {
-						IsChecked: formData.CreateDuplicate,
-					},
-				},
-			}
-			session.AddFlash(validationErrors)
-			session.Save(r, w)
-			http.Redirect(w, r, basePath+"/new", http.StatusSeeOther)
-			return
-		}
-	}
-
-	shortCode := shortcode.New(userID, formData.DestinationUrl, 7)
-
-	_, err := lh.queries.CreateLink(context.Background(), db.CreateLinkParams{
-		UserID:         userID,
-		ShortCode:      shortCode,
-		DestinationUrl: formData.DestinationUrl,
-		Title:          pgtype.Text{String: formData.Title, Valid: true},
-		Notes:          pgtype.Text{String: formData.Notes, Valid: true},
-	})
-
+	_, err := SaveNewLink(lh.queries, userID, formData)
 	if err != nil {
 		log.Printf("Failed to create new link: %v", err)
 		http.Error(w, "Failed to create new link", http.StatusInternalServerError)

@@ -30,17 +30,17 @@
 
     {{ with .validationErrors.Duplicates }}
       {{ if .Urls }}
-      <div class="has-duplicates">
-        <h3>You've shortened this link before:</h3>
-        <ul>
-          {{ range .Urls }}
-          <li><a href="{{ .Href }}">{{ .Text }}</a></li>
+        <div class="has-duplicates">
+          <h3>You've shortened this link before:</h3>
+          <ul>
+            {{ range .Urls }}
+            <li><a href="{{ .Href }}">{{ .Text }}</a></li>
+            {{ end }}
+          </ul>
+          {{ if gt .RemainingCount 0 }}
+            <p>... and {{ .RemainingCount }} others</p>
           {{ end }}
-        </ul>
-        {{ if gt .RemainingCount 0 }}
-          <p>... and {{ .RemainingCount }} others</p>
-        {{ end }}
-      </div>
+        </div>
       {{ end }}
     {{ end }}
 
