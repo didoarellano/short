@@ -71,6 +71,7 @@ func main() {
 	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore, redisClient)
 	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
 	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
+	privateAppRouter.Use(authHandlers.UserSubscriptionMiddleware())
 	privateAppRouter.HandleFunc("/links", linkHandlers.UserLinks).Methods("GET")
 	privateAppRouter.HandleFunc("/links/new", linkHandlers.CreateLink).Methods("GET", "POST")
 	privateAppRouter.HandleFunc("/links/{shortcode}", linkHandlers.UserLink).Methods("GET")

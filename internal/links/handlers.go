@@ -2,7 +2,6 @@ package links
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -120,11 +119,8 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	basePath := "/" + config.AppData.AppPathPrefix + "/links"
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
-	ctx := context.Background()
 
-	var subscription db.GetUserSubscriptionRow
-	s, _ := lh.redisClient.Get(ctx, fmt.Sprintf("user:%d:subscription", userID)).Result()
-	json.Unmarshal([]byte(s), &subscription)
+	subscription := r.Context().Value(auth.SubscriptionKey).(auth.Subscription)
 
 	if r.Method == "GET" {
 		ShowCreateForm(ShowCreateFormParams{

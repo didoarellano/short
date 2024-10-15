@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
@@ -53,7 +54,7 @@ type ShowCreateFormParams struct {
 	r                *http.Request
 	session          *sessions.Session
 	template         *templ.Templ
-	userSubscription db.GetUserSubscriptionRow
+	userSubscription auth.Subscription
 }
 
 func ShowCreateForm(arg ShowCreateFormParams) {
@@ -89,7 +90,7 @@ type ValidateCreateFormParams struct {
 	queries          *db.Queries
 	userID           int32
 	formData         FormData
-	userSubscription db.GetUserSubscriptionRow
+	userSubscription auth.Subscription
 }
 
 func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
