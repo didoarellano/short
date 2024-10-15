@@ -12,18 +12,36 @@ import (
 )
 
 const addBasicSubscription = `-- name: AddBasicSubscription :one
-INSERT INTO user_subscriptions
-  (user_id, subscription_id, end_date)
-VALUES
-  ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
-RETURNING end_date
+WITH user_sub AS (
+  INSERT INTO user_subscriptions (user_id, subscription_id, end_date)
+  VALUES ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
+  RETURNING status, subscription_id
+)
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+FROM user_sub us
+JOIN subscriptions s
+ON us.subscription_id = s.id
 `
 
-func (q *Queries) AddBasicSubscription(ctx context.Context, userID int32) (pgtype.Timestamp, error) {
+type AddBasicSubscriptionRow struct {
+	Status              string
+	Name                string
+	MaxLinksPerMonth    int32
+	CanCustomisePath    bool
+	CanCreateDuplicates bool
+}
+
+func (q *Queries) AddBasicSubscription(ctx context.Context, userID int32) (AddBasicSubscriptionRow, error) {
 	row := q.db.QueryRow(ctx, addBasicSubscription, userID)
-	var end_date pgtype.Timestamp
-	err := row.Scan(&end_date)
-	return end_date, err
+	var i AddBasicSubscriptionRow
+	err := row.Scan(
+		&i.Status,
+		&i.Name,
+		&i.MaxLinksPerMonth,
+		&i.CanCustomisePath,
+		&i.CanCreateDuplicates,
+	)
+	return i, err
 }
 
 const createLink = `-- name: CreateLink :one

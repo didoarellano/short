@@ -61,14 +61,14 @@ func main() {
 	rootRouter.HandleFunc("/", t.RenderStatic("index.html")).Methods("GET")
 	rootRouter.NotFoundHandler = t.RenderStatic("404.html")
 
-	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore)
+	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore, redisClient)
 	appRouter := rootRouter.PathPrefix("/" + config.AppData.AppPathPrefix).Subrouter()
 	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
 	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
 	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")
 	appRouter.HandleFunc("/auth/{provider}/callback", authHandlers.OAuthCallback).Methods("GET")
 
-	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore)
+	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore, redisClient)
 	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
 	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
 	privateAppRouter.HandleFunc("/links", linkHandlers.UserLinks).Methods("GET")

@@ -2,6 +2,7 @@ package links
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/templ"
+	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 )
 
@@ -19,13 +21,15 @@ type LinkHandler struct {
 	template     *templ.Templ
 	queries      *db.Queries
 	sessionStore session.SessionStore
+	redisClient  *redis.Client
 }
 
-func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore) *LinkHandler {
+func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore, r *redis.Client) *LinkHandler {
 	return &LinkHandler{
 		template:     t,
 		queries:      q,
 		sessionStore: s,
+		redisClient:  r,
 	}
 }
 
@@ -116,13 +120,11 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	basePath := "/" + config.AppData.AppPathPrefix + "/links"
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
+	ctx := context.Background()
 
-	subscription, err := lh.queries.GetUserSubscription(context.Background(), userID)
-	if err != nil {
-		log.Printf("Failed to query user subscription: %v", err)
-		http.Error(w, "Failed to query user subscription", http.StatusInternalServerError)
-		return
-	}
+	var subscription db.GetUserSubscriptionRow
+	s, _ := lh.redisClient.Get(ctx, fmt.Sprintf("user:%d:subscription", userID)).Result()
+	json.Unmarshal([]byte(s), &subscription)
 
 	if r.Method == "GET" {
 		ShowCreateForm(ShowCreateFormParams{
@@ -150,7 +152,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = SaveNewLink(lh.queries, userID, formData)
+	_, err := SaveNewLink(lh.queries, userID, formData)
 	if err != nil {
 		log.Printf("Failed to create new link: %v", err)
 		http.Error(w, "Failed to create new link", http.StatusInternalServerError)

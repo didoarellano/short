@@ -20,11 +20,15 @@ ON us.subscription_id=s.id
 WHERE us.user_id=$1;
 
 -- name: AddBasicSubscription :one
-INSERT INTO user_subscriptions
-  (user_id, subscription_id, end_date)
-VALUES
-  ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
-RETURNING end_date;
+WITH user_sub AS (
+  INSERT INTO user_subscriptions (user_id, subscription_id, end_date)
+  VALUES ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
+  RETURNING status, subscription_id
+)
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+FROM user_sub us
+JOIN subscriptions s
+ON us.subscription_id = s.id;
 
 -- name: CreateLink :one
 INSERT INTO links (user_id, short_code, destination_url, title, notes)

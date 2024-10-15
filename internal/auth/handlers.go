@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/templ"
+	"github.com/go-redis/redis/v8"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/markbates/goth/gothic"
@@ -19,13 +21,15 @@ type AuthHandler struct {
 	template     *templ.Templ
 	queries      *db.Queries
 	sessionStore session.SessionStore
+	redisClient  *redis.Client
 }
 
-func NewAuthHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore) *AuthHandler {
+func NewAuthHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore, r *redis.Client) *AuthHandler {
 	return &AuthHandler{
 		template:     t,
 		queries:      q,
 		sessionStore: s,
+		redisClient:  r,
 	}
 }
 
@@ -60,11 +64,7 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 
 	ctx := context.Background()
 	user, err := ah.queries.GetUserByEmail(ctx, gothUser.Email)
-
-	if err != nil {
-		log.Printf("Failed to query user: %v", err)
-		http.Error(w, "Failed to query user", http.StatusInternalServerError)
-	}
+	var subscription db.GetUserSubscriptionRow
 
 	if err == pgx.ErrNoRows {
 		newUser, err := ah.queries.CreateUser(ctx, db.CreateUserParams{
@@ -83,12 +83,13 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		// Make sure the two queries in queries.sql always return the same columns.
 		user = db.GetUserByEmailRow(newUser)
 
-		_, err = ah.queries.AddBasicSubscription(ctx, user.ID)
+		sub, err := ah.queries.AddBasicSubscription(ctx, user.ID)
 		if err != nil {
 			log.Println("Adding basic subscription to user failed", err)
 			http.Error(w, "Adding basic subscription to user failed", http.StatusInternalServerError)
 			return
 		}
+		subscription = db.GetUserSubscriptionRow(sub)
 	}
 
 	session.Values["user"] = UserSession{
@@ -101,6 +102,25 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err)
 		http.Error(w, "Failed to set session", http.StatusInternalServerError)
 		return
+	}
+
+	if subscription.Name == "" {
+		subscription, err = ah.queries.GetUserSubscription(context.Background(), user.ID)
+		if err != nil {
+			log.Printf("Failed to get user subscription: %v", err)
+			http.Error(w, "Failed to get user subscription", http.StatusInternalServerError)
+			return
+		}
+	}
+
+	_, err = ah.redisClient.Get(ctx, fmt.Sprintf("user:%d:subscription", user.ID)).Result()
+	if err == redis.Nil {
+		b, err := json.Marshal(subscription)
+		if err != nil {
+			log.Printf("JSON conversion failed: %v", err)
+			http.Error(w, "Error", http.StatusInternalServerError)
+		}
+		ah.redisClient.Set(ctx, fmt.Sprintf("user:%d:subscription", user.ID), string(b), 0)
 	}
 
 	http.Redirect(w, r, "/"+config.AppData.AppPathPrefix+"/links", http.StatusSeeOther)
