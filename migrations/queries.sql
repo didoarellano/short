@@ -88,3 +88,8 @@ SELECT
               WHERE l.user_id = $1
                 AND l.destination_url = $2) - sqlc.arg('limit'), 0)::int AS remaining_count
 FROM limited_links;
+
+-- name: GetLinkByShortCode :one
+SELECT user_id, short_code from links
+WHERE short_code = $1
+LIMIT 1;

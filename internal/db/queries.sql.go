@@ -155,6 +155,24 @@ func (q *Queries) GetDestinationUrl(ctx context.Context, shortCode string) (stri
 	return destination_url, err
 }
 
+const getLinkByShortCode = `-- name: GetLinkByShortCode :one
+SELECT user_id, short_code from links
+WHERE short_code = $1
+LIMIT 1
+`
+
+type GetLinkByShortCodeRow struct {
+	UserID    int32
+	ShortCode string
+}
+
+func (q *Queries) GetLinkByShortCode(ctx context.Context, shortCode string) (GetLinkByShortCodeRow, error) {
+	row := q.db.QueryRow(ctx, getLinkByShortCode, shortCode)
+	var i GetLinkByShortCodeRow
+	err := row.Scan(&i.UserID, &i.ShortCode)
+	return i, err
+}
+
 const getLinkForUser = `-- name: GetLinkForUser :one
 SELECT short_code, destination_url, title, notes, created_at, updated_at
 FROM links

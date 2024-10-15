@@ -12,11 +12,13 @@ import (
 	"github.com/didoarellano/short/internal/shortcode"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/gorilla/sessions"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type FormData struct {
 	DestinationUrl  string
+	Path            string
 	Title           string
 	Notes           string
 	CreateDuplicate bool
@@ -29,6 +31,7 @@ type DuplicateUrl struct {
 
 type DuplicateUrls struct {
 	Urls           []DuplicateUrl
+	Message        string
 	DestinationUrl string
 	RemainingCount int32
 }
@@ -79,6 +82,7 @@ func ParseCreateForm(r *http.Request) FormData {
 	r.ParseForm()
 	formData := FormData{
 		DestinationUrl:  strings.TrimSpace(r.FormValue("url")),
+		Path:            strings.TrimSpace(r.FormValue("path")),
 		Title:           strings.TrimSpace(r.FormValue("title")),
 		Notes:           strings.TrimSpace(r.FormValue("notes")),
 		CreateDuplicate: r.FormValue("create-duplicate") == "on",
@@ -102,6 +106,9 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 			FormFields: map[string]FormFieldValidation{
 				"Url": {
 					Value: formData.DestinationUrl,
+				},
+				"Path": {
+					Value: formData.Path,
 				},
 				"Title": {
 					Value: formData.Title,
@@ -129,6 +136,35 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 		validation.IsValid = false
 	}
 
+	if formData.Path != "" && !arg.userSubscription.CanCustomisePath {
+		validation.IsValid = false
+		validation.Errors.FormFields["Path"] = FormFieldValidation{
+			Value:   formData.Path,
+			Message: "Custom paths require a pro subscription",
+		}
+	}
+
+	if formData.Path != "" && arg.userSubscription.CanCustomisePath {
+		link, err := arg.queries.GetLinkByShortCode(context.Background(), formData.Path)
+		if err != pgx.ErrNoRows {
+			validation.IsValid = false
+			validation.Errors.FormFields["Path"] = FormFieldValidation{
+				Value:   formData.Path,
+				Message: fmt.Sprintf("%s is already in use", formData.Path),
+			}
+
+			if link.UserID == arg.userID {
+				validation.Errors.Duplicates = DuplicateUrls{
+					Urls: []DuplicateUrl{{
+						Text: link.ShortCode,
+						Href: fmt.Sprintf("/%s/links/%s", config.AppData.AppPathPrefix, link.ShortCode),
+					}},
+					Message: "You've used this path before",
+				}
+			}
+		}
+	}
+
 	if !formData.CreateDuplicate {
 		links, _ := arg.queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
 			UserID:         arg.userID,
@@ -141,6 +177,7 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 			if duplicates != nil {
 				validation.IsValid = false
 				validation.Errors.Duplicates = *duplicates
+				validation.Errors.Duplicates.Message = "You've shortened this link before"
 			}
 		}
 	}
@@ -175,7 +212,13 @@ func findDuplicateLinks(queries *db.Queries, userID int32, destinationUrl string
 }
 
 func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link, error) {
-	shortCode := shortcode.New(userID, formData.DestinationUrl, 7)
+	var shortCode string
+	if formData.Path != "" {
+		shortCode = formData.Path
+	} else {
+		shortCode = shortcode.New(userID, formData.DestinationUrl, 7)
+	}
+
 	return queries.CreateLink(context.Background(), db.CreateLinkParams{
 		UserID:         userID,
 		ShortCode:      shortCode,

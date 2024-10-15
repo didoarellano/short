@@ -31,7 +31,7 @@
     {{ with .validationErrors.Duplicates }}
       {{ if .Urls }}
         <div class="has-duplicates">
-          <h3>You've shortened this link before:</h3>
+          <h3>{{ .Message }}</h3>
           <ul>
             {{ range .Urls }}
             <li><a href="{{ .Href }}">{{ .Text }}</a></li>
@@ -70,6 +70,17 @@
           {{ if .validationErrors.FormFields.CreateDuplicate.IsChecked }} checked {{ end }}
         />
         <p>If you've previously shortened the same url, we'll create a separate one with a new short code.</p>
+      </p>
+    {{ end }}
+
+    {{ if .userSubscription.CanCustomisePath }}
+      <p>
+        <label for="path">Custom path (optional)</label>
+        {{ $path := .validationErrors.FormFields.Path.Value }}
+        <input type="text" name="path" id="path" value="{{ if $path }}{{ $path }}{{ end }}"/>
+        {{ with .validationErrors.FormFields.Path }}
+          <p>{{ .Message }}</p>
+        {{ end }}
       </p>
     {{ end }}
 
