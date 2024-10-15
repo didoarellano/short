@@ -59,16 +59,20 @@
         <p>{{ .Message }}</p>
       {{ end }}
     </p>
-    <p>
-      <label for="create-duplicate">Create Duplicate</label>
-      <input
-        type="checkbox"
-        name="create-duplicate"
-        id="create-duplicate"
-        {{ if .validationErrors.FormFields.CreateDuplicate.IsChecked }} checked {{ end }}
-      />
-      <p>If you've previously shortened the same url, we'll create a separate one with a new short code.</p>
-    </p>
+
+    {{ if .userSubscription.CanCreateDuplicates }}
+      <p>
+        <label for="create-duplicate">Create Duplicate</label>
+        <input
+          type="checkbox"
+          name="create-duplicate"
+          id="create-duplicate"
+          {{ if .validationErrors.FormFields.CreateDuplicate.IsChecked }} checked {{ end }}
+        />
+        <p>If you've previously shortened the same url, we'll create a separate one with a new short code.</p>
+      </p>
+    {{ end }}
+
     <p>
       <label for="title">Title (optional)</label>
       {{ $title := .validationErrors.FormFields.Title.Value }}

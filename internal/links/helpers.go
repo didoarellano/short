@@ -48,9 +48,17 @@ type FormValidation struct {
 	Errors  FormValidationErrors
 }
 
-func ShowCreateForm(w http.ResponseWriter, r *http.Request, session *sessions.Session, template *templ.Templ) {
+type ShowCreateFormParams struct {
+	w                http.ResponseWriter
+	r                *http.Request
+	session          *sessions.Session
+	template         *templ.Templ
+	userSubscription db.GetUserSubscriptionRow
+}
+
+func ShowCreateForm(arg ShowCreateFormParams) {
 	var validationErrors FormValidationErrors
-	flashes := session.Flashes()
+	flashes := arg.session.Flashes()
 	if len(flashes) > 0 {
 		if v, ok := flashes[0].(FormValidationErrors); ok {
 			validationErrors = v
@@ -58,10 +66,11 @@ func ShowCreateForm(w http.ResponseWriter, r *http.Request, session *sessions.Se
 	}
 	data := map[string]interface{}{
 		"validationErrors": validationErrors,
+		"userSubscription": arg.userSubscription,
 	}
-	session.Save(r, w)
-	if err := template.ExecuteTemplate(w, "create_link.html", data); err != nil {
-		http.Error(w, "Failed to render template", http.StatusInternalServerError)
+	arg.session.Save(arg.r, arg.w)
+	if err := arg.template.ExecuteTemplate(arg.w, "create_link.html", data); err != nil {
+		http.Error(arg.w, "Failed to render template", http.StatusInternalServerError)
 	}
 }
 
@@ -76,7 +85,16 @@ func ParseCreateForm(r *http.Request) FormData {
 	return formData
 }
 
-func ValidateCreateForm(queries *db.Queries, userID int32, formData FormData) FormValidation {
+type ValidateCreateFormParams struct {
+	queries          *db.Queries
+	userID           int32
+	formData         FormData
+	userSubscription db.GetUserSubscriptionRow
+}
+
+func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
+	formData := arg.formData
+
 	validation := FormValidation{
 		IsValid: true,
 		Errors: FormValidationErrors{
@@ -106,15 +124,19 @@ func ValidateCreateForm(queries *db.Queries, userID int32, formData FormData) Fo
 		return validation
 	}
 
+	if formData.CreateDuplicate && !arg.userSubscription.CanCreateDuplicates {
+		validation.IsValid = false
+	}
+
 	if !formData.CreateDuplicate {
-		links, _ := queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
-			UserID:         userID,
+		links, _ := arg.queries.FindDuplicatesForUrl(context.Background(), db.FindDuplicatesForUrlParams{
+			UserID:         arg.userID,
 			DestinationUrl: formData.DestinationUrl,
 			Limit:          3,
 		})
 
 		if len(links.ShortCodes) > 0 {
-			duplicates := findDuplicateLinks(queries, userID, formData.DestinationUrl)
+			duplicates := findDuplicateLinks(arg.queries, arg.userID, formData.DestinationUrl)
 			if duplicates != nil {
 				validation.IsValid = false
 				validation.Errors.Duplicates = *duplicates

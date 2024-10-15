@@ -114,17 +114,34 @@ func (lh *LinkHandler) UserLinks(w http.ResponseWriter, r *http.Request) {
 func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	session, _ := lh.sessionStore.Get(r, "session")
 	basePath := "/" + config.AppData.AppPathPrefix + "/links"
-
-	if r.Method == "GET" {
-		ShowCreateForm(w, r, session, lh.template)
-		return
-	}
-
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
 
+	subscription, err := lh.queries.GetUserSubscription(context.Background(), userID)
+	if err != nil {
+		log.Printf("Failed to query user subscription: %v", err)
+		http.Error(w, "Failed to query user subscription", http.StatusInternalServerError)
+		return
+	}
+
+	if r.Method == "GET" {
+		ShowCreateForm(ShowCreateFormParams{
+			w:                w,
+			r:                r,
+			session:          session,
+			template:         lh.template,
+			userSubscription: subscription,
+		})
+		return
+	}
+
 	formData := ParseCreateForm(r)
-	validatedForm := ValidateCreateForm(lh.queries, userID, formData)
+	validatedForm := ValidateCreateForm(ValidateCreateFormParams{
+		queries:          lh.queries,
+		userID:           userID,
+		formData:         formData,
+		userSubscription: subscription,
+	})
 
 	if !validatedForm.IsValid {
 		session.AddFlash(validatedForm.Errors)
@@ -133,7 +150,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err := SaveNewLink(lh.queries, userID, formData)
+	_, err = SaveNewLink(lh.queries, userID, formData)
 	if err != nil {
 		log.Printf("Failed to create new link: %v", err)
 		http.Error(w, "Failed to create new link", http.StatusInternalServerError)

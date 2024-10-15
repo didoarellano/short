@@ -253,3 +253,32 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 	err := row.Scan(&i.ID, &i.Name, &i.Email)
 	return i, err
 }
+
+const getUserSubscription = `-- name: GetUserSubscription :one
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+FROM user_subscriptions us
+JOIN subscriptions s
+ON us.subscription_id=s.id
+WHERE us.user_id=$1
+`
+
+type GetUserSubscriptionRow struct {
+	Status              string
+	Name                string
+	MaxLinksPerMonth    int32
+	CanCustomisePath    bool
+	CanCreateDuplicates bool
+}
+
+func (q *Queries) GetUserSubscription(ctx context.Context, userID int32) (GetUserSubscriptionRow, error) {
+	row := q.db.QueryRow(ctx, getUserSubscription, userID)
+	var i GetUserSubscriptionRow
+	err := row.Scan(
+		&i.Status,
+		&i.Name,
+		&i.MaxLinksPerMonth,
+		&i.CanCustomisePath,
+		&i.CanCreateDuplicates,
+	)
+	return i, err
+}

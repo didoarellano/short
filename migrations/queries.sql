@@ -12,6 +12,13 @@ INSERT INTO users (name, email, oauth_provider)
 VALUES ($1, $2, $3)
 RETURNING id, name, email;
 
+-- name: GetUserSubscription :one
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+FROM user_subscriptions us
+JOIN subscriptions s
+ON us.subscription_id=s.id
+WHERE us.user_id=$1;
+
 -- name: AddBasicSubscription :one
 INSERT INTO user_subscriptions
   (user_id, subscription_id, end_date)
