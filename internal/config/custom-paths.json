@@ -1,0 +1,7 @@
+{
+  "min_length": 4,
+  "max_length": 20,
+  "reserved_words": [
+    "app"
+  ]
+}

@@ -2,6 +2,7 @@ package links
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -145,21 +146,32 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 	}
 
 	if formData.Path != "" && arg.userSubscription.CanCustomisePath {
-		link, err := arg.queries.GetLinkByShortCode(context.Background(), formData.Path)
-		if err != pgx.ErrNoRows {
+		customPathConfig, _ := config.LoadCustomPathConfig()
+		err := ValidateCustomPath(formData.Path, customPathConfig)
+
+		if err != nil {
 			validation.IsValid = false
 			validation.Errors.FormFields["Path"] = FormFieldValidation{
 				Value:   formData.Path,
-				Message: fmt.Sprintf("%s is already in use", formData.Path),
+				Message: err.Error(),
 			}
+		} else {
+			link, err := arg.queries.GetLinkByShortCode(context.Background(), formData.Path)
+			if err != pgx.ErrNoRows {
+				validation.IsValid = false
+				validation.Errors.FormFields["Path"] = FormFieldValidation{
+					Value:   formData.Path,
+					Message: fmt.Sprintf("%s is already in use", formData.Path),
+				}
 
-			if link.UserID == arg.userID {
-				validation.Errors.Duplicates = DuplicateUrls{
-					Urls: []DuplicateUrl{{
-						Text: link.ShortCode,
-						Href: fmt.Sprintf("/%s/links/%s", config.AppData.AppPathPrefix, link.ShortCode),
-					}},
-					Message: "You've used this path before",
+				if link.UserID == arg.userID {
+					validation.Errors.Duplicates = DuplicateUrls{
+						Urls: []DuplicateUrl{{
+							Text: link.ShortCode,
+							Href: fmt.Sprintf("/%s/links/%s", config.AppData.AppPathPrefix, link.ShortCode),
+						}},
+						Message: "You've used this path before",
+					}
 				}
 			}
 		}
@@ -226,4 +238,19 @@ func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link,
 		Title:          pgtype.Text{String: formData.Title, Valid: true},
 		Notes:          pgtype.Text{String: formData.Notes, Valid: true},
 	})
+}
+
+func ValidateCustomPath(path string, config *config.CustomPathConfig) error {
+	length := len(path)
+	if length < config.MinLength || length > config.MaxLength {
+		return fmt.Errorf("path must be between %d and %d characters", config.MinLength, config.MaxLength)
+	}
+
+	for _, word := range config.ReservedWords {
+		if strings.EqualFold(path, word) {
+			return errors.New("path is reserved")
+		}
+	}
+
+	return nil
 }
