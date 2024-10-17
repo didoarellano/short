@@ -38,6 +38,16 @@ type User struct {
 	UpdatedAt     pgtype.Timestamp
 }
 
+type UserMonthlyUsage struct {
+	ID             int32
+	UserID         pgtype.Int4
+	LinksCreated   pgtype.Int4
+	CycleStartDate pgtype.Date
+	CycleEndDate   pgtype.Date
+	CreatedAt      pgtype.Timestamp
+	UpdatedAt      pgtype.Timestamp
+}
+
 type UserSubscription struct {
 	UserID         int32
 	SubscriptionID int32

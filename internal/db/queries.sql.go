@@ -16,6 +16,12 @@ WITH user_sub AS (
   INSERT INTO user_subscriptions (user_id, subscription_id, end_date)
   VALUES ($1, (SELECT id FROM subscriptions WHERE name = 'basic'), 'infinity')
   RETURNING status, subscription_id
+),
+user_usage AS (
+  INSERT INTO user_monthly_usage (user_id, cycle_start_date, cycle_end_date)
+  VALUES (
+    $1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month'
+  )
 )
 SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
 FROM user_sub us
