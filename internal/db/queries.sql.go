@@ -51,6 +51,14 @@ func (q *Queries) AddBasicSubscription(ctx context.Context, userID int32) (AddBa
 }
 
 const createLink = `-- name: CreateLink :one
+WITH updated_usage AS (
+  UPDATE user_monthly_usage
+  SET links_created = links_created + 1,
+      updated_at = CURRENT_TIMESTAMP
+  WHERE user_id = $1
+    AND cycle_start_date <= CURRENT_DATE
+    AND cycle_end_date > CURRENT_DATE
+)
 INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING id, user_id, short_code, destination_url, title, notes, created_at, updated_at
@@ -294,6 +302,21 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (GetUserByEm
 	var i GetUserByEmailRow
 	err := row.Scan(&i.ID, &i.Name, &i.Email)
 	return i, err
+}
+
+const getUserCurrentUsage = `-- name: GetUserCurrentUsage :one
+SELECT links_created
+FROM user_monthly_usage
+WHERE user_id = $1
+  AND cycle_start_date <= CURRENT_DATE
+  AND cycle_end_date > CURRENT_DATE
+`
+
+func (q *Queries) GetUserCurrentUsage(ctx context.Context, userID int32) (int32, error) {
+	row := q.db.QueryRow(ctx, getUserCurrentUsage, userID)
+	var links_created int32
+	err := row.Scan(&links_created)
+	return links_created, err
 }
 
 const getUserSubscription = `-- name: GetUserSubscription :one

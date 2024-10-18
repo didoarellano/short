@@ -40,8 +40,8 @@ type User struct {
 
 type UserMonthlyUsage struct {
 	ID             int32
-	UserID         pgtype.Int4
-	LinksCreated   pgtype.Int4
+	UserID         int32
+	LinksCreated   int32
 	CycleStartDate pgtype.Date
 	CycleEndDate   pgtype.Date
 	CreatedAt      pgtype.Timestamp

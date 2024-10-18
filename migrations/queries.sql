@@ -36,7 +36,22 @@ FROM user_sub us
 JOIN subscriptions s
 ON us.subscription_id = s.id;
 
+-- name: GetUserCurrentUsage :one
+SELECT links_created
+FROM user_monthly_usage
+WHERE user_id = $1
+  AND cycle_start_date <= CURRENT_DATE
+  AND cycle_end_date > CURRENT_DATE;
+
 -- name: CreateLink :one
+WITH updated_usage AS (
+  UPDATE user_monthly_usage
+  SET links_created = links_created + 1,
+      updated_at = CURRENT_TIMESTAMP
+  WHERE user_id = $1
+    AND cycle_start_date <= CURRENT_DATE
+    AND cycle_end_date > CURRENT_DATE
+)
 INSERT INTO links (user_id, short_code, destination_url, title, notes)
 VALUES ($1, $2, $3, $4, $5)
 RETURNING *;

@@ -121,6 +121,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	userID := user.UserID
 
 	subscription := r.Context().Value(auth.SubscriptionKey).(auth.Subscription)
+	linksCreated, _ := lh.queries.GetUserCurrentUsage(context.Background(), userID)
 
 	if r.Method == "GET" {
 		ShowCreateForm(ShowCreateFormParams{
@@ -129,7 +130,17 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 			session:          session,
 			template:         lh.template,
 			userSubscription: subscription,
+			linksCreated:     linksCreated,
 		})
+		return
+	}
+
+	if linksCreated >= subscription.MaxLinksPerMonth {
+		session.AddFlash(FormValidationErrors{
+			Message: "You can't create anymore links this month. Upgrade to pro for more.",
+		})
+		session.Save(r, w)
+		http.Redirect(w, r, basePath+"/new", http.StatusFound)
 		return
 	}
 

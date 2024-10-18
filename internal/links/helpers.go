@@ -46,6 +46,7 @@ type FormFieldValidation struct {
 type FormValidationErrors struct {
 	FormFields map[string]FormFieldValidation
 	Duplicates DuplicateUrls
+	Message    string
 }
 
 type FormValidation struct {
@@ -59,6 +60,7 @@ type ShowCreateFormParams struct {
 	session          *sessions.Session
 	template         *templ.Templ
 	userSubscription auth.Subscription
+	linksCreated     int32
 }
 
 func ShowCreateForm(arg ShowCreateFormParams) {
@@ -72,6 +74,7 @@ func ShowCreateForm(arg ShowCreateFormParams) {
 	data := map[string]interface{}{
 		"validationErrors": validationErrors,
 		"userSubscription": arg.userSubscription,
+		"linksRemaining":   arg.userSubscription.MaxLinksPerMonth - arg.linksCreated,
 	}
 	arg.session.Save(arg.r, arg.w)
 	if err := arg.template.ExecuteTemplate(arg.w, "create_link.html", data); err != nil {

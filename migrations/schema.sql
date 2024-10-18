@@ -40,8 +40,8 @@ CREATE TABLE links (
 
 CREATE TABLE user_monthly_usage (
   id SERIAL PRIMARY KEY,
-  user_id INT REFERENCES users(id) ON DELETE CASCADE,
-  links_created INT DEFAULT 0,
+  user_id INT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  links_created INT NOT NULL DEFAULT 0,
   cycle_start_date DATE NOT NULL,
   cycle_end_date DATE NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

@@ -43,3 +43,7 @@ func (ah *AuthHandler) GetSubscriptionForUser(userID int32) (Subscription, error
 
 	return subscription, nil
 }
+
+func (ah *AuthHandler) GetUserCurrentUsage(userID int32) (int32, error) {
+	return ah.queries.GetUserCurrentUsage(context.Background(), userID)
+}
