@@ -18,18 +18,20 @@ import (
 )
 
 type LinkHandler struct {
-	template     *templ.Templ
-	queries      *db.Queries
-	sessionStore session.SessionStore
-	redisClient  *redis.Client
+	template         *templ.Templ
+	queries          *db.Queries
+	sessionStore     session.SessionStore
+	redisClient      *redis.Client
+	userSubscription subscriptions.UserSubscriptionService
 }
 
-func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore, r *redis.Client) *LinkHandler {
+func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore, r *redis.Client, us subscriptions.UserSubscriptionService) *LinkHandler {
 	return &LinkHandler{
-		template:     t,
-		queries:      q,
-		sessionStore: s,
-		redisClient:  r,
+		template:         t,
+		queries:          q,
+		sessionStore:     s,
+		redisClient:      r,
+		userSubscription: us,
 	}
 }
 
@@ -167,6 +169,8 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to create new link", http.StatusInternalServerError)
 		return
 	}
+
+	lh.userSubscription.SetCachedCurrentUsageForUser(userID, linksCreated+1)
 
 	http.Redirect(w, r, basePath, http.StatusSeeOther)
 }

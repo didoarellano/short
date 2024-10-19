@@ -70,7 +70,7 @@ func main() {
 	appRouter.HandleFunc("/auth/{provider}/callback", authHandlers.OAuthCallback).Methods("GET")
 
 	userSubscriptionService := subscriptions.NewUserSubscriptionService(queries, sessionStore, redisClient)
-	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore, redisClient)
+	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore, redisClient, *userSubscriptionService)
 	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
 	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
 	privateAppRouter.Use(userSubscriptionService.UserSubscriptionMiddleware())

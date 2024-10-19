@@ -86,3 +86,9 @@ func (us *UserSubscriptionService) GetCurrentUsageForUser(userID int32) (int32, 
 
 	return links_created, e
 }
+
+func (us *UserSubscriptionService) SetCachedCurrentUsageForUser(userID, value int32) {
+	key := fmt.Sprintf("user:%d:links_created", userID)
+	ctx := context.Background()
+	us.redisClient.Set(ctx, key, value, 0)
+}
