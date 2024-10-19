@@ -35,6 +35,8 @@
         {{ end }}
       </h3>
 
+      <p>Visits: {{ len $.analytics }}</p>
+
       {{ $shortUrl := printf "%s/%s" $.RedirectorBaseURL .ShortCode }}
       <p><a href="{{ $shortUrl }}">{{ $shortUrl }}</a></p>
 
@@ -55,5 +57,23 @@
     </div>
   {{ end }}
 
+  <div>
+    <h2>Visits</h2>
+    <ol>
+      {{ range .analytics }}
+        <li>
+          <p>Referrer: {{ .ReferrerUrl }}</p>
+          <p>Visited on: {{ .RecordedAt }}</p>
+          {{ with .UserAgentDetails }}
+            <p>{{ .BrowserName }} v{{ .BrowserVersion }}</p>
+            <p>{{ .OSName }} {{ .OSVersion }}</p>
+            <p>{{ .Device }}</p>
+            <p>{{ .Type }}</p>
+            <p>{{ .UAString }}</p>
+          {{ end }}
+        </li>
+      {{ end }}
+    </ol>
+  </div>
 </body>
 </html>

@@ -118,3 +118,9 @@ LIMIT 1;
 -- name: RecordVisit :exec
 INSERT INTO analytics (short_code, user_agent_data, referrer_url)
 VALUES ($1, $2, $3);
+
+-- name: GetVisitDataForShortcode :many
+SELECT user_agent_data, referrer_url, recorded_at
+FROM analytics
+WHERE short_code = $1
+ORDER BY created_at DESC;

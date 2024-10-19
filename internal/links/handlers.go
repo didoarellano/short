@@ -2,14 +2,17 @@ package links
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/redirector"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/subscriptions"
 	"github.com/didoarellano/short/internal/templ"
@@ -175,6 +178,12 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, basePath, http.StatusSeeOther)
 }
 
+type AnalyticsData struct {
+	ReferrerUrl      string
+	RecordedAt       time.Time
+	UserAgentDetails redirector.UserAgentDetails
+}
+
 func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	session, _ := lh.sessionStore.Get(r, "session")
@@ -192,9 +201,22 @@ func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	analyticsRows, _ := lh.queries.GetVisitDataForShortcode(context.Background(), vars["shortcode"])
+	var analytics []AnalyticsData
+	for _, data := range analyticsRows {
+		var jsonData redirector.UserAgentDetails
+		json.Unmarshal(data.UserAgentData, &jsonData)
+		analytics = append(analytics, AnalyticsData{
+			ReferrerUrl:      data.ReferrerUrl.String,
+			RecordedAt:       data.RecordedAt.Time,
+			UserAgentDetails: jsonData,
+		})
+	}
+
 	data := map[string]interface{}{
 		"user":       user,
 		"link":       link,
+		"analytics":  analytics,
 		"wasUpdated": !link.CreatedAt.Time.Equal(link.UpdatedAt.Time),
 	}
 

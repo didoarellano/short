@@ -348,6 +348,39 @@ func (q *Queries) GetUserSubscription(ctx context.Context, userID int32) (GetUse
 	return i, err
 }
 
+const getVisitDataForShortcode = `-- name: GetVisitDataForShortcode :many
+SELECT user_agent_data, referrer_url, recorded_at
+FROM analytics
+WHERE short_code = $1
+ORDER BY created_at DESC
+`
+
+type GetVisitDataForShortcodeRow struct {
+	UserAgentData []byte
+	ReferrerUrl   pgtype.Text
+	RecordedAt    pgtype.Timestamptz
+}
+
+func (q *Queries) GetVisitDataForShortcode(ctx context.Context, shortCode string) ([]GetVisitDataForShortcodeRow, error) {
+	rows, err := q.db.Query(ctx, getVisitDataForShortcode, shortCode)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetVisitDataForShortcodeRow
+	for rows.Next() {
+		var i GetVisitDataForShortcodeRow
+		if err := rows.Scan(&i.UserAgentData, &i.ReferrerUrl, &i.RecordedAt); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const recordVisit = `-- name: RecordVisit :exec
 INSERT INTO analytics (short_code, user_agent_data, referrer_url)
 VALUES ($1, $2, $3)
