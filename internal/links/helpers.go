@@ -7,10 +7,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
+	"github.com/didoarellano/short/internal/subscriptions"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5"
@@ -59,7 +59,7 @@ type ShowCreateFormParams struct {
 	r                *http.Request
 	session          *sessions.Session
 	template         *templ.Templ
-	userSubscription auth.Subscription
+	userSubscription subscriptions.Subscription
 	linksCreated     int32
 }
 
@@ -98,7 +98,7 @@ type ValidateCreateFormParams struct {
 	queries          *db.Queries
 	userID           int32
 	formData         FormData
-	userSubscription auth.Subscription
+	userSubscription subscriptions.Subscription
 }
 
 func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {

@@ -14,6 +14,7 @@ import (
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/links"
 	"github.com/didoarellano/short/internal/redirector"
+	"github.com/didoarellano/short/internal/subscriptions"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -68,10 +69,11 @@ func main() {
 	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")
 	appRouter.HandleFunc("/auth/{provider}/callback", authHandlers.OAuthCallback).Methods("GET")
 
+	userSubscriptionService := subscriptions.NewUserSubscriptionService(queries, sessionStore, redisClient)
 	linkHandlers := links.NewLinkHandlers(t, queries, sessionStore, redisClient)
 	privateAppRouter := appRouter.PathPrefix("/").Subrouter()
 	privateAppRouter.Use(auth.PrivateRoute(sessionStore))
-	privateAppRouter.Use(authHandlers.UserSubscriptionMiddleware())
+	privateAppRouter.Use(userSubscriptionService.UserSubscriptionMiddleware())
 	privateAppRouter.HandleFunc("/links", linkHandlers.UserLinks).Methods("GET")
 	privateAppRouter.HandleFunc("/links/new", linkHandlers.CreateLink).Methods("GET", "POST")
 	privateAppRouter.HandleFunc("/links/{shortcode}", linkHandlers.UserLink).Methods("GET")

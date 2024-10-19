@@ -11,6 +11,7 @@ import (
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/session"
+	"github.com/didoarellano/short/internal/subscriptions"
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
@@ -120,8 +121,9 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
 
-	subscription := r.Context().Value(auth.SubscriptionKey).(auth.Subscription)
-	linksCreated, _ := lh.queries.GetUserCurrentUsage(context.Background(), userID)
+	userSubscriptionContext := r.Context().Value(subscriptions.SubscriptionKey).(subscriptions.UserSubscriptionContext)
+	subscription := userSubscriptionContext.Subscription
+	linksCreated := userSubscriptionContext.LinksCreated
 
 	if r.Method == "GET" {
 		ShowCreateForm(ShowCreateFormParams{
