@@ -48,3 +48,14 @@ CREATE TABLE user_monthly_usage (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 CREATE UNIQUE INDEX idx_user_monthly_usage_user_id ON user_monthly_usage (user_id);
+
+CREATE TABLE analytics (
+  id SERIAL PRIMARY KEY,
+  short_code TEXT NOT NULL REFERENCES links(short_code) ON DELETE CASCADE,
+  user_agent_data JSONB,
+  referrer_url TEXT,
+  recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_analytics_short_code ON analytics (short_code);

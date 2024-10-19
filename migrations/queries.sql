@@ -114,3 +114,7 @@ FROM limited_links;
 SELECT user_id, short_code from links
 WHERE short_code = $1
 LIMIT 1;
+
+-- name: RecordVisit :exec
+INSERT INTO analytics (short_code, user_agent_data, referrer_url)
+VALUES ($1, $2, $3);

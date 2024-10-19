@@ -8,6 +8,16 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type Analytic struct {
+	ID            int32
+	ShortCode     string
+	UserAgentData []byte
+	ReferrerUrl   pgtype.Text
+	RecordedAt    pgtype.Timestamptz
+	CreatedAt     pgtype.Timestamp
+	UpdatedAt     pgtype.Timestamp
+}
+
 type Link struct {
 	ID             int32
 	UserID         int32

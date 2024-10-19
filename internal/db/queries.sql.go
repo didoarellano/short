@@ -347,3 +347,19 @@ func (q *Queries) GetUserSubscription(ctx context.Context, userID int32) (GetUse
 	)
 	return i, err
 }
+
+const recordVisit = `-- name: RecordVisit :exec
+INSERT INTO analytics (short_code, user_agent_data, referrer_url)
+VALUES ($1, $2, $3)
+`
+
+type RecordVisitParams struct {
+	ShortCode     string
+	UserAgentData []byte
+	ReferrerUrl   pgtype.Text
+}
+
+func (q *Queries) RecordVisit(ctx context.Context, arg RecordVisitParams) error {
+	_, err := q.db.Exec(ctx, recordVisit, arg.ShortCode, arg.UserAgentData, arg.ReferrerUrl)
+	return err
+}
