@@ -55,18 +55,7 @@ func (rr *Redirector) RedirectHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("redis error %v:", err)
 	}
 
-	uaData, _ := parseUserAgent(r.UserAgent())
-	referrer := r.Referer()
-	geoData := rr.GetGeoData(r)
-	geoDataJSON, _ := json.Marshal(geoData)
-	log.Println(geoData)
-
-	rr.queries.RecordVisit(ctx, db.RecordVisitParams{
-		ShortCode:     shortcode,
-		UserAgentData: uaData,
-		GeoData:       geoDataJSON,
-		ReferrerUrl:   pgtype.Text{String: referrer, Valid: referrer != ""},
-	})
+	go rr.RecordVisit(ctx, r, shortcode)
 
 	http.Redirect(w, r, destinationUrl, http.StatusSeeOther)
 }
@@ -136,4 +125,28 @@ func (rr *Redirector) GetGeoData(r *http.Request) geodata.GeoData {
 	ip := getClientIP(r)
 	geoData, _ := rr.geodataFetcher.GetGeoData(net.ParseIP(ip))
 	return geoData
+}
+
+func (rr *Redirector) RecordVisit(ctx context.Context, r *http.Request, shortcode string) {
+	defer func() {
+		if r := recover(); r != nil {
+			log.Printf("Recovered from panic in background job: %v", r)
+		}
+	}()
+
+	uaData, _ := parseUserAgent(r.UserAgent())
+	referrer := r.Referer()
+	geoData := rr.GetGeoData(r)
+	geoDataJSON, _ := json.Marshal(geoData)
+
+	err := rr.queries.RecordVisit(ctx, db.RecordVisitParams{
+		ShortCode:     shortcode,
+		UserAgentData: uaData,
+		GeoData:       geoDataJSON,
+		ReferrerUrl:   pgtype.Text{String: referrer, Valid: referrer != ""},
+	})
+
+	if err != nil {
+		log.Printf("Failed to record visit: %v", err)
+	}
 }
