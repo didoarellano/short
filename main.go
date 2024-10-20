@@ -12,6 +12,7 @@ import (
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/geodata"
 	"github.com/didoarellano/short/internal/links"
 	"github.com/didoarellano/short/internal/redirector"
 	"github.com/didoarellano/short/internal/subscriptions"
@@ -57,7 +58,15 @@ func main() {
 
 	rootRouter := mux.NewRouter()
 
-	rootRouter.HandleFunc("/{shortcode}", redirector.RedirectHandler(queries, redisClient)).Methods("GET")
+	var geodataFetcher geodata.GeoDataFetcher
+	if os.Getenv("ENV") == "dev" {
+		geodataFetcher = &geodata.MockGeoDataFetcher{}
+	} else {
+		geodataFetcher = &geodata.RealGeoDataFetcher{}
+	}
+
+	redirector := redirector.New(queries, redisClient, geodataFetcher)
+	rootRouter.HandleFunc("/{shortcode}", redirector.RedirectHandler).Methods("GET")
 
 	rootRouter.HandleFunc("/", t.RenderStatic("index.html")).Methods("GET")
 	rootRouter.NotFoundHandler = t.RenderStatic("404.html")

@@ -53,6 +53,7 @@ CREATE UNIQUE INDEX idx_user_monthly_usage_user_id ON user_monthly_usage (user_i
 CREATE TABLE analytics (
   id SERIAL PRIMARY KEY,
   short_code TEXT NOT NULL REFERENCES links(short_code) ON DELETE CASCADE,
+  geo_data JSONB,
   user_agent_data JSONB,
   referrer_url TEXT,
   recorded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

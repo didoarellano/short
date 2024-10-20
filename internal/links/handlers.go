@@ -12,6 +12,7 @@ import (
 	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/geodata"
 	"github.com/didoarellano/short/internal/redirector"
 	"github.com/didoarellano/short/internal/session"
 	"github.com/didoarellano/short/internal/subscriptions"
@@ -179,9 +180,10 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 }
 
 type AnalyticsData struct {
-	ReferrerUrl      string
-	RecordedAt       time.Time
-	UserAgentDetails redirector.UserAgentDetails
+	ReferrerUrl string
+	RecordedAt  time.Time
+	UserAgent   redirector.UserAgentDetails
+	GeoData     geodata.GeoData
 }
 
 func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
@@ -206,12 +208,15 @@ func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
 	analyticsRows, _ := lh.queries.GetVisitDataForShortcode(context.Background(), vars["shortcode"])
 	var analytics []AnalyticsData
 	for _, data := range analyticsRows {
-		var jsonData redirector.UserAgentDetails
-		json.Unmarshal(data.UserAgentData, &jsonData)
+		var uaData redirector.UserAgentDetails
+		var geoData geodata.GeoData
+		json.Unmarshal(data.UserAgentData, &uaData)
+		json.Unmarshal(data.GeoData, &geoData)
 		analytics = append(analytics, AnalyticsData{
-			ReferrerUrl:      data.ReferrerUrl.String,
-			RecordedAt:       data.RecordedAt.Time,
-			UserAgentDetails: jsonData,
+			ReferrerUrl: data.ReferrerUrl.String,
+			RecordedAt:  data.RecordedAt.Time,
+			UserAgent:   uaData,
+			GeoData:     geoData,
 		})
 	}
 

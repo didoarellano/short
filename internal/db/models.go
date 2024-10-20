@@ -11,6 +11,7 @@ import (
 type Analytic struct {
 	ID            int32
 	ShortCode     string
+	GeoData       []byte
 	UserAgentData []byte
 	ReferrerUrl   pgtype.Text
 	RecordedAt    pgtype.Timestamptz

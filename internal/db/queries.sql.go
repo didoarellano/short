@@ -353,7 +353,7 @@ func (q *Queries) GetUserSubscription(ctx context.Context, userID int32) (GetUse
 }
 
 const getVisitDataForShortcode = `-- name: GetVisitDataForShortcode :many
-SELECT user_agent_data, referrer_url, recorded_at
+SELECT user_agent_data, geo_data, referrer_url, recorded_at
 FROM analytics
 WHERE short_code = $1
 ORDER BY created_at DESC
@@ -361,6 +361,7 @@ ORDER BY created_at DESC
 
 type GetVisitDataForShortcodeRow struct {
 	UserAgentData []byte
+	GeoData       []byte
 	ReferrerUrl   pgtype.Text
 	RecordedAt    pgtype.Timestamptz
 }
@@ -374,7 +375,12 @@ func (q *Queries) GetVisitDataForShortcode(ctx context.Context, shortCode string
 	var items []GetVisitDataForShortcodeRow
 	for rows.Next() {
 		var i GetVisitDataForShortcodeRow
-		if err := rows.Scan(&i.UserAgentData, &i.ReferrerUrl, &i.RecordedAt); err != nil {
+		if err := rows.Scan(
+			&i.UserAgentData,
+			&i.GeoData,
+			&i.ReferrerUrl,
+			&i.RecordedAt,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -386,17 +392,23 @@ func (q *Queries) GetVisitDataForShortcode(ctx context.Context, shortCode string
 }
 
 const recordVisit = `-- name: RecordVisit :exec
-INSERT INTO analytics (short_code, user_agent_data, referrer_url)
-VALUES ($1, $2, $3)
+INSERT INTO analytics (short_code, user_agent_data, geo_data, referrer_url)
+VALUES ($1, $2, $3, $4)
 `
 
 type RecordVisitParams struct {
 	ShortCode     string
 	UserAgentData []byte
+	GeoData       []byte
 	ReferrerUrl   pgtype.Text
 }
 
 func (q *Queries) RecordVisit(ctx context.Context, arg RecordVisitParams) error {
-	_, err := q.db.Exec(ctx, recordVisit, arg.ShortCode, arg.UserAgentData, arg.ReferrerUrl)
+	_, err := q.db.Exec(ctx, recordVisit,
+		arg.ShortCode,
+		arg.UserAgentData,
+		arg.GeoData,
+		arg.ReferrerUrl,
+	)
 	return err
 }

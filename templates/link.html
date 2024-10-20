@@ -67,12 +67,16 @@
           <li>
             <p>Referrer: {{ .ReferrerUrl }}</p>
             <p>Visited on: {{ .RecordedAt }}</p>
-            {{ with .UserAgentDetails }}
+            {{ with .UserAgent }}
               <p>{{ .BrowserName }} v{{ .BrowserVersion }}</p>
               <p>{{ .OSName }} {{ .OSVersion }}</p>
               <p>{{ .Device }}</p>
               <p>{{ .Type }}</p>
               <p>{{ .UAString }}</p>
+            {{ end }}
+
+            {{ with .GeoData }}
+              <p>{{ .City }}, {{ .Region }}, {{ .Country }}</p>
             {{ end }}
           </li>
         {{ end }}

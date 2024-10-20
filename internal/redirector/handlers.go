@@ -5,52 +5,70 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"time"
 
 	"github.com/didoarellano/short/internal/db"
+	"github.com/didoarellano/short/internal/geodata"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/mileusna/useragent"
 )
 
-func RedirectHandler(q *db.Queries, redisClient *redis.Client) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		vars := mux.Vars(r)
-		shortcode := vars["shortcode"]
+type Redirector struct {
+	queries        *db.Queries
+	redisClient    *redis.Client
+	geodataFetcher geodata.GeoDataFetcher
+}
 
-		ctx := context.Background()
-		key := fmt.Sprintf("shortcode:%s", shortcode)
-		destinationUrl, err := redisClient.Get(ctx, key).Result()
+func New(q *db.Queries, r *redis.Client, g geodata.GeoDataFetcher) *Redirector {
+	return &Redirector{
+		queries:        q,
+		redisClient:    r,
+		geodataFetcher: g,
+	}
+}
 
-		if err == redis.Nil {
-			destinationUrl, err = q.GetDestinationUrl(ctx, shortcode)
-			if err != nil {
-				log.Printf("Destination URL not found: %v", err)
-				http.Error(w, "Not found", http.StatusNotFound)
-				return
-			}
+func (rr *Redirector) RedirectHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	shortcode := vars["shortcode"]
 
-			err = redisClient.Set(ctx, key, destinationUrl, 24*time.Hour).Err()
-			if err != nil {
-				log.Printf("Failed to cache shortcode: %v", err)
-			}
-		} else if err != nil {
-			log.Printf("redis error %v:", err)
+	ctx := context.Background()
+	key := fmt.Sprintf("shortcode:%s", shortcode)
+	destinationUrl, err := rr.redisClient.Get(ctx, key).Result()
+
+	if err == redis.Nil {
+		destinationUrl, err = rr.queries.GetDestinationUrl(ctx, shortcode)
+		if err != nil {
+			log.Printf("Destination URL not found: %v", err)
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
 		}
 
-		uaData, _ := parseUserAgent(r.UserAgent())
-		referrer := r.Referer()
-		q.RecordVisit(ctx, db.RecordVisitParams{
-			ShortCode:     shortcode,
-			UserAgentData: uaData,
-			ReferrerUrl:   pgtype.Text{String: referrer, Valid: referrer != ""},
-		})
-
-		log.Println("Redirecting to", destinationUrl)
-		http.Redirect(w, r, destinationUrl, http.StatusSeeOther)
+		err = rr.redisClient.Set(ctx, key, destinationUrl, 24*time.Hour).Err()
+		if err != nil {
+			log.Printf("Failed to cache shortcode: %v", err)
+		}
+	} else if err != nil {
+		log.Printf("redis error %v:", err)
 	}
+
+	uaData, _ := parseUserAgent(r.UserAgent())
+	referrer := r.Referer()
+	geoData := rr.GetGeoData(r)
+	geoDataJSON, _ := json.Marshal(geoData)
+	log.Println(geoData)
+
+	rr.queries.RecordVisit(ctx, db.RecordVisitParams{
+		ShortCode:     shortcode,
+		UserAgentData: uaData,
+		GeoData:       geoDataJSON,
+		ReferrerUrl:   pgtype.Text{String: referrer, Valid: referrer != ""},
+	})
+
+	http.Redirect(w, r, destinationUrl, http.StatusSeeOther)
 }
 
 type UserAgentDetails struct {
@@ -94,4 +112,28 @@ func parseUserAgent(uaString string) ([]byte, error) {
 	}
 
 	return uaJSON, nil
+}
+
+func getClientIP(r *http.Request) string {
+	forwarded := r.Header.Get("X-Forwarded-For")
+	if forwarded != "" {
+		return forwarded
+	}
+
+	realIP := r.Header.Get("X-Real-IP")
+	if realIP != "" {
+		return realIP
+	}
+
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return ""
+	}
+	return ip
+}
+
+func (rr *Redirector) GetGeoData(r *http.Request) geodata.GeoData {
+	ip := getClientIP(r)
+	geoData, _ := rr.geodataFetcher.GetGeoData(net.ParseIP(ip))
+	return geoData
 }
