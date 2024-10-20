@@ -35,6 +35,7 @@ type Subscription struct {
 	MaxLinksPerMonth    int32
 	CanCustomisePath    bool
 	CanCreateDuplicates bool
+	CanViewAnalytics    bool
 	CreatedAt           pgtype.Timestamp
 	UpdatedAt           pgtype.Timestamp
 }

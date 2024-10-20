@@ -59,21 +59,25 @@
 
   <div>
     <h2>Visits</h2>
-    <ol>
-      {{ range .analytics }}
-        <li>
-          <p>Referrer: {{ .ReferrerUrl }}</p>
-          <p>Visited on: {{ .RecordedAt }}</p>
-          {{ with .UserAgentDetails }}
-            <p>{{ .BrowserName }} v{{ .BrowserVersion }}</p>
-            <p>{{ .OSName }} {{ .OSVersion }}</p>
-            <p>{{ .Device }}</p>
-            <p>{{ .Type }}</p>
-            <p>{{ .UAString }}</p>
-          {{ end }}
-        </li>
-      {{ end }}
-    </ol>
+    {{ if not .userSubscription.CanViewAnalytics }}
+      <p>Upgrade to view analytics</p>
+    {{ else }}
+      <ol>
+        {{ range .analytics }}
+          <li>
+            <p>Referrer: {{ .ReferrerUrl }}</p>
+            <p>Visited on: {{ .RecordedAt }}</p>
+            {{ with .UserAgentDetails }}
+              <p>{{ .BrowserName }} v{{ .BrowserVersion }}</p>
+              <p>{{ .OSName }} {{ .OSVersion }}</p>
+              <p>{{ .Device }}</p>
+              <p>{{ .Type }}</p>
+              <p>{{ .UAString }}</p>
+            {{ end }}
+          </li>
+        {{ end }}
+      </ol>
+    {{ end }}
   </div>
 </body>
 </html>

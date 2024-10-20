@@ -13,6 +13,7 @@ CREATE TABLE subscriptions (
   max_links_per_month INT NOT NULL,
   can_customise_path BOOLEAN NOT NULL DEFAULT FALSE,
   can_create_duplicates BOOLEAN NOT NULL DEFAULT FALSE,
+  can_view_analytics BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

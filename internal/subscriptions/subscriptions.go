@@ -23,6 +23,7 @@ type Subscription struct {
 	MaxLinksPerMonth    int32
 	CanCustomisePath    bool
 	CanCreateDuplicates bool
+	CanViewAnalytics    bool
 }
 
 func NewUserSubscriptionService(q *db.Queries, s session.SessionStore, r *redis.Client) *UserSubscriptionService {

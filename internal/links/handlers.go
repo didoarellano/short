@@ -189,6 +189,8 @@ func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
 	session, _ := lh.sessionStore.Get(r, "session")
 	user := session.Values["user"].(auth.UserSession)
 	userID := user.UserID
+	userSubscriptionContext := r.Context().Value(subscriptions.SubscriptionKey).(subscriptions.UserSubscriptionContext)
+	subscription := userSubscriptionContext.Subscription
 
 	link, err := lh.queries.GetLinkForUser(context.Background(), db.GetLinkForUserParams{
 		UserID:    userID,
@@ -214,10 +216,11 @@ func (lh *LinkHandler) UserLink(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]interface{}{
-		"user":       user,
-		"link":       link,
-		"analytics":  analytics,
-		"wasUpdated": !link.CreatedAt.Time.Equal(link.UpdatedAt.Time),
+		"user":             user,
+		"userSubscription": subscription,
+		"link":             link,
+		"analytics":        analytics,
+		"wasUpdated":       !link.CreatedAt.Time.Equal(link.UpdatedAt.Time),
 	}
 
 	if err := lh.template.ExecuteTemplate(w, "link.html", data); err != nil {

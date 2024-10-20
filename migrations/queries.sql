@@ -13,7 +13,7 @@ VALUES ($1, $2, $3)
 RETURNING id, name, email;
 
 -- name: GetUserSubscription :one
-SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates, s.can_view_analytics
 FROM user_subscriptions us
 JOIN subscriptions s
 ON us.subscription_id=s.id
@@ -31,7 +31,7 @@ user_usage AS (
     $1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month'
   )
 )
-SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates, s.can_view_analytics
 FROM user_sub us
 JOIN subscriptions s
 ON us.subscription_id = s.id;
