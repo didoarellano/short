@@ -5,6 +5,7 @@ import (
 	"embed"
 	"encoding/gob"
 	"html/template"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -26,6 +27,9 @@ import (
 //go:embed templates/*
 var resources embed.FS
 var stdtemplate = template.Must(template.ParseFS(resources, "templates/*"))
+
+//go:embed static/*
+var static embed.FS
 
 var queries *db.Queries
 var sessionStore *redisstore.RedisStore
@@ -73,6 +77,11 @@ func main() {
 
 	authHandlers := auth.NewAuthHandlers(t, queries, sessionStore, redisClient)
 	appRouter := rootRouter.PathPrefix("/" + config.AppData.AppPathPrefix).Subrouter()
+
+	subFS, _ := fs.Sub(static, "static")
+	fs := http.FileServer(http.FS(subFS))
+	appRouter.PathPrefix("/static/").Handler(http.StripPrefix("/"+config.AppData.AppPathPrefix+"/static/", fs))
+
 	appRouter.HandleFunc("/signin", authHandlers.Signin).Methods("GET")
 	appRouter.HandleFunc("/signout", authHandlers.Signout).Methods("POST")
 	appRouter.HandleFunc("/auth/{provider}", authHandlers.BeginAuth).Methods("GET")

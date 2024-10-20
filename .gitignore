@@ -23,3 +23,7 @@ go.work.sum
 !.env.example
 
 tmp/
+
+# ignore only build artifacts
+static/*
+!static/src

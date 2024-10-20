@@ -1,0 +1,12 @@
+{
+  "name": "short",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "tailwindcss build -i static/src/main.css -o static/css/styles.css",
+    "watch": "tailwindcss build -i static/src/main.css -o static/css/styles.css --watch"
+  },
+  "devDependencies": {
+    "daisyui": "^4.12.23",
+    "tailwindcss": "^3.4.17"
+  }
+}
