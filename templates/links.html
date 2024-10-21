@@ -8,9 +8,9 @@
   <link rel="stylesheet" href="/app/static/css/styles.css">
   <title>My Links | Short</title>
 </head>
-<body>
+<body class="container mx-auto max-w-screen-md px-4"></body>
 
-  <nav class="navbar container mx-auto px-0">
+  <nav class="navbar px-0">
     <div class="flex-1 -ml-4">
       <a href="/" class="btn btn-ghost text-xl">🩳</a>
     </div>
@@ -30,8 +30,7 @@
     </ul>
   </nav>
 
-
-  <main class="container mx-auto py-4 grid gap-4">
+  <main class="py-4 grid gap-4 ">
     {{ if not .links }}
       <p>No links found. <a href="/{{$p}}/links/new">Shorten one.</a></p>
     {{ else }}
