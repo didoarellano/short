@@ -5,75 +5,93 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
+  <link rel="stylesheet" href="/app/static/css/styles.css">
   <title>My Links | Short</title>
 </head>
 <body>
-  <nav>
-    <ul>
-      <li><a href="/">Home</a></li>
+
+  <nav class="navbar container mx-auto px-0">
+    <div class="flex-1 -ml-4">
+      <a href="/" class="btn btn-ghost text-xl">🩳</a>
+    </div>
+    <ul class="menu menu-horizontal px-0 -mr-4">
       {{ $p := .AppPathPrefix }}
-      <li><a href="/{{$p}}/links">My Links</a></li>
-      <li><a href="/{{$p}}/auth/google">Sign in with Google</a></li>
-      <li>
-        <form action="/{{$p}}/signout" method="POST">
-          <button type="submit">Sign Out</button>
-        </form>
-      </li>
-      <li><a href="/{{$p}}/links/new">Create New Link</a></li>
+      {{ if .user }}
+        <li><a href="/{{$p}}/links">My Links</a></li>
+        <li><a href="/{{$p}}/links/new">Create New Link</a></li>
+        <li>
+          <form action="/{{$p}}/signout" method="POST">
+            <button type="submit">Sign Out</button>
+          </form>
+        </li>
+      {{ else }}
+        <li><a href="/{{$p}}/auth/google">Sign in</a></li>
+      {{ end }}
     </ul>
   </nav>
 
-  <p><a href="/{{$p}}/auth/google">Sign in with Google</a></p>
-  <h1>🩳 Short</h1>
-  <h2>My Links</h2>
-  <h3>Hello {{ .user.Username }}!</h3>
 
-  {{ if not .links }}
-    <p>No links found. <a href="/{{$p}}/links/new">Shorten one.</a></p>
-  {{ else }}
-    <ul>
-      {{ range .links }}
-        <li>
+  <main class="container mx-auto py-4 grid gap-4">
+    {{ if not .links }}
+      <p>No links found. <a href="/{{$p}}/links/new">Shorten one.</a></p>
+    {{ else }}
 
-          <h3>
-            <a href="/{{$p}}/links/{{ .short_code }}">
-              {{ with .title }}
-                {{ . }}
+      <table class="table">
+        <thead class="bg-slate-100 shadow">
+          <tr>
+            <th>Title</th>
+            <th>Short URL</th>
+            <th>Destination URL</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .links }}
+            <tr>
+              <td>
+                <a class="link" href="/{{$p}}/links/{{ .short_code }}">
+                  {{ with .title }}
+                    {{ . }}
+                  {{ else }}
+                    {{ .destination_url }}
+                  {{ end }}
+                </a>
+              </td>
+
+              <td>
+                {{ $shortUrl := printf "%s/%s" $.RedirectorBaseURL .short_code }}
+                <a class="link" href="{{ $shortUrl }}">{{ $shortUrl }}</a>
+              </td>
+
+              <td>
+                <a class="link" href="{{ .destination_url }}">{{ .destination_url }}</a>
+              </td>
+
+              <td>{{ .notes }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+
+      {{ with .paginationLinks }}
+        <div class="join flex justify-end">
+          {{ range .}}
+            <a href="{{ .Href }}"
+              class="join-item text-xs btn btn-sm btn-outline"
+              {{ if .Disabled }}disabled{{ end}}>
+              {{ if eq .Text "first" }}
+                «
+              {{ else if eq .Text "last" }}
+                »
               {{ else }}
-                {{ .destination_url }}
+                {{ .Text }}
               {{ end }}
             </a>
-          </h3>
-
-          {{ $shortUrl := printf "%s/%s" $.RedirectorBaseURL .short_code }}
-          <p><a href="{{ $shortUrl }}">{{ $shortUrl }}</a></p>
-
-          <p><a href="{{ .destination_url }}">{{ .destination_url }}</a></p>
-
-          {{ with .notes }}
-            <p>{{ . }}</p>
           {{ end }}
-        </li>
+        </div>
       {{ end }}
-    </ul>
 
-    {{ with .paginationLinks }}
-      <div>
-        <ul>
-          {{ range .}}
-            <li>
-              {{ if .Disabled }}
-                <a href="#" class="disabled">{{ .Text }}</a>
-              {{ else }}
-                <a href="{{ .Href }}">{{ .Text }}</a>
-              {{ end }}
-            </li>
-          {{ end }}
-        </ul>
-      </div>
     {{ end }}
-
-  {{ end }}
-
+  </main>
 </body>
 </html>
