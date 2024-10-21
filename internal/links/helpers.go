@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/didoarellano/short/internal/auth"
 	"github.com/didoarellano/short/internal/config"
 	"github.com/didoarellano/short/internal/db"
 	"github.com/didoarellano/short/internal/shortcode"
@@ -59,6 +60,7 @@ type ShowCreateFormParams struct {
 	r                *http.Request
 	session          *sessions.Session
 	template         *templ.Templ
+	user             auth.UserSession
 	userSubscription subscriptions.Subscription
 	linksCreated     int32
 }
@@ -74,6 +76,7 @@ func ShowCreateForm(arg ShowCreateFormParams) {
 	data := map[string]interface{}{
 		"validationErrors": validationErrors,
 		"userSubscription": arg.userSubscription,
+		"user":             arg.user,
 		"linksRemaining":   arg.userSubscription.MaxLinksPerMonth - arg.linksCreated,
 	}
 	arg.session.Save(arg.r, arg.w)

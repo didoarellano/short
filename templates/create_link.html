@@ -5,107 +5,174 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon"
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
-  <title>Create New Short Link | Short</title>
+  <link rel="stylesheet" href="/app/static/css/styles.css">
+  <title>Shorten A Link | Short</title>
 </head>
-<body>
-  <nav>
-    <ul>
-      <li><a href="/">Home</a></li>
+<body class="container mx-auto max-w-screen-md px-4">
+
+  <nav class="navbar px-0">
+    <div class="flex-1 -ml-4">
+      <a href="/" class="btn btn-ghost text-xl">🩳</a>
+    </div>
+    <ul class="menu menu-horizontal px-0 -mr-4">
       {{ $p := .AppPathPrefix }}
-      <li><a href="/{{$p}}/links">My Links</a></li>
-      <li><a href="/{{$p}}/auth/google">Sign in with Google</a></li>
-      <li>
-        <form action="/{{$p}}/signout" method="POST">
-          <button type="submit">Sign Out</button>
-        </form>
-      </li>
-      <li><a href="/{{$p}}/links/new">Create New Link</a></li>
+      {{ if .user }}
+        <li><a href="/{{$p}}/links">My Links</a></li>
+        <li><a href="/{{$p}}/links/new">Create New Link</a></li>
+        <li>
+          <form action="/{{$p}}/signout" method="POST">
+            <button type="submit">Sign Out</button>
+          </form>
+        </li>
+      {{ else }}
+        <li><a href="/{{$p}}/auth/google">Sign in</a></li>
+      {{ end }}
     </ul>
   </nav>
 
-  <h1>🩳 Short</h1>
+  <main class="py-4 grid gap-4">
+    {{ with .validationErrors.Message }}
+      <p role="alert" class="alert alert-error rounded text-white shadow">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+        </svg>
+        <span>{{ . }}</span>
+      </p>
+    {{ end }}
 
-  {{ with .validationErrors.Message }}
-    <p>{{ . }}</p>
-  {{ end }}
-
-  <form method="POST" {{ if eq .linksRemaining 0 }}inert{{ end }}>
-    <h2>Create a new short link</h2>
-    <p>
       {{ if eq .linksRemaining 0 }}
-        You can't create anymore links this month. Upgrade to pro for more.
+        <p role="alert" class="alert alert-error rounded text-white shadow">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+          </svg>
+          <span>You can't create anymore links this month. Upgrade to pro for more.</span>
+        </p>
       {{ else }}
-        You can create {{ .linksRemaining }} more links this month
+        <p class="flex justify-end gap-2 text-slate-500">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+          </svg>
+          <span>You can create <strong>{{ .linksRemaining }}</strong> more links this month.</span>
+        </p>
       {{ end }}
-    </p>
 
-    {{ with .validationErrors.Duplicates }}
-      {{ if .Urls }}
-        <div class="has-duplicates">
-          <h3>{{ .Message }}</h3>
-          <ul>
-            {{ range .Urls }}
-            <li><a href="{{ .Href }}">{{ .Text }}</a></li>
-            {{ end }}
-          </ul>
-          {{ if gt .RemainingCount 0 }}
-            <p>... and {{ .RemainingCount }} others</p>
+    <form
+      method="POST"
+      class="grid gap-6 shadow p-4 bg-slate-100 rounded"
+      {{ if eq .linksRemaining 0 }}inert{{ end }}
+    >
+      <h2 class="font-bold text-xl capitalize">Create new Short link</h2>
+
+      {{ with .validationErrors.Duplicates }}
+        {{ if .Urls }}
+          <div role="alert" class="alert alert-warning rounded">
+            <h3>
+              <svg class="size-6 inline" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+              </svg>
+              <span>{{ .Message }}</span>
+            </h3>
+            <div class="col-start-1 row-start-2 row-span-2">
+              <ul class="list-disc list-inside">
+                {{ range .Urls }}
+                <li><a class="link" href="{{ .Href }}">{{ .Text }}</a></li>
+                {{ end }}
+              </ul>
+              {{ if gt .RemainingCount 0 }}
+              <p>... and {{ .RemainingCount }} others</p>
+              {{ end }}
+            </div>
+          </div>
+        {{ end }}
+      {{ end }}
+
+      <div class="grid gap-1">
+        <label for="url" class="block font-bold text-slate-600">Destination</label>
+        <input
+            type="text"
+            name="url"
+            id="url"
+            max-length="2048"
+            class="appearance-none border w-full py-2 px-3"
+            placeholder="https://example.com"
+            required
+
+            {{ $destUrl := .validationErrors.FormFields.Url.Value }}
+            value="{{ if $destUrl }}{{ $destUrl }}{{ end }}"
+        />
+        {{ with .validationErrors.FormFields.Url }}
+          <p class="text-red-500 text-xs italic">{{ .Message }}</p>
+        {{ end }}
+      </div>
+
+      {{ if .userSubscription.CanCreateDuplicates }}
+        <div class="grid grid-cols-[1.25rem,auto] grid-rows-2 gap-x-2">
+          <input
+            type="checkbox"
+            name="create-duplicate"
+            id="create-duplicate"
+            class="w-5 col-start-1"
+            {{ if .validationErrors.FormFields.CreateDuplicate.IsChecked }} checked {{ end }}
+          />
+
+          <label for="create-duplicate" class="font-bold text-slate-600 col-start-2">
+            Create Duplicate
+          </label>
+
+          <p class="col-start-2 text-sm italic">If you've already shortened the same url, a separate one will be created with a new short code.</p>
+        </div>
+      {{ end }}
+
+      {{ if .userSubscription.CanCustomisePath }}
+        <div class="grid gap-1">
+          <label for="path" class="block font-bold text-slate-600">Custom path <span class="text-xs italic">(optional)</span></label>
+          <input
+              type="text"
+              name="path"
+              id="path"
+              class="appearance-none border w-full py-2 px-3"
+              placeholder="customslug"
+
+              {{ $path := .validationErrors.FormFields.Path.Value }}
+              value="{{ if $path }}{{ $path }}{{ end }}"
+          />
+          {{ with .validationErrors.FormFields.Path }}
+            <p class="text-red-500 text-xs italic">{{ .Message }}</p>
           {{ end }}
         </div>
       {{ end }}
-    {{ end }}
 
-    <p>
-      <label for="url">Destination</label>
-      <input
-          type="text"
-          name="url"
-          id="url"
-          max-length="2048"
-
-          {{ $destUrl := .validationErrors.FormFields.Url.Value }}
-          value="{{ if $destUrl }}{{ $destUrl }}{{ end }}"
-      />
-      {{ with .validationErrors.FormFields.Url }}
-        <p>{{ .Message }}</p>
-      {{ end }}
-    </p>
-
-    {{ if .userSubscription.CanCreateDuplicates }}
-      <p>
-        <label for="create-duplicate">Create Duplicate</label>
+      <div class="grid gap-1">
+        <label for="title" class="block font-bold text-slate-600">Title <span class="text-xs italic">(optional)</span></label>
         <input
-          type="checkbox"
-          name="create-duplicate"
-          id="create-duplicate"
-          {{ if .validationErrors.FormFields.CreateDuplicate.IsChecked }} checked {{ end }}
+          type="text"
+          name="title"
+          id="title"
+          class="appearance-none border w-full py-2 px-3"
+          placeholder="My link"
+
+          {{ $title := .validationErrors.FormFields.Title.Value }}
+          value="{{ if $title }}{{ $title }}{{ end }}"
         />
-        <p>If you've previously shortened the same url, we'll create a separate one with a new short code.</p>
-      </p>
-    {{ end }}
+      </div>
 
-    {{ if .userSubscription.CanCustomisePath }}
-      <p>
-        <label for="path">Custom path (optional)</label>
-        {{ $path := .validationErrors.FormFields.Path.Value }}
-        <input type="text" name="path" id="path" value="{{ if $path }}{{ $path }}{{ end }}"/>
-        {{ with .validationErrors.FormFields.Path }}
-          <p>{{ .Message }}</p>
-        {{ end }}
-      </p>
-    {{ end }}
+      <div class="grid gap-1">
+        <label for="notes" class="block font-bold text-slate-600">Notes <span class="text-xs italic">(optional)</span></label>
+        <textarea
+          name="notes"
+          id="notes"
+          class="appearance-none border w-full py-2 px-3"
 
-    <p>
-      <label for="title">Title (optional)</label>
-      {{ $title := .validationErrors.FormFields.Title.Value }}
-      <input type="text" name="title" id="title" value="{{ if $title }}{{ $title }}{{ end }}"/>
-    </p>
-    <p>
-      <label for="notes">Notes (optional)</label>
-      {{ $notes := .validationErrors.FormFields.Notes.Value }}
-      <textarea name="notes" id="notes">{{ if $notes }}{{ $notes }}{{ end }}</textarea>
-    </p>
-    <button type="submit">Create Link</button>
-  </form>
+          {{ $notes := .validationErrors.FormFields.Notes.Value }}
+        >{{ if $notes }}{{ $notes }}{{ end }}</textarea>
+      </div>
+
+      <div>
+        <button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+          Create Short Link
+        </button>
+      </div>
+    </form>
+  </main>
 </body>
 </html>

@@ -137,6 +137,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 			r:                r,
 			session:          session,
 			template:         lh.template,
+			user:             user,
 			userSubscription: subscription,
 			linksCreated:     linksCreated,
 		})
