@@ -132,6 +132,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 	linksCreated := userSubscriptionContext.LinksCreated
 
 	if r.Method == "GET" {
+		customPathConfig, _ := config.LoadCustomPathConfig()
 		ShowCreateForm(ShowCreateFormParams{
 			w:                w,
 			r:                r,
@@ -140,6 +141,7 @@ func (lh *LinkHandler) CreateLink(w http.ResponseWriter, r *http.Request) {
 			user:             user,
 			userSubscription: subscription,
 			linksCreated:     linksCreated,
+			customPathConfig: customPathConfig,
 		})
 		return
 	}

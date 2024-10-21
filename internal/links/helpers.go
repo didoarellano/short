@@ -63,6 +63,7 @@ type ShowCreateFormParams struct {
 	user             auth.UserSession
 	userSubscription subscriptions.Subscription
 	linksCreated     int32
+	customPathConfig *config.CustomPathConfig
 }
 
 func ShowCreateForm(arg ShowCreateFormParams) {
@@ -78,6 +79,7 @@ func ShowCreateForm(arg ShowCreateFormParams) {
 		"userSubscription": arg.userSubscription,
 		"user":             arg.user,
 		"linksRemaining":   arg.userSubscription.MaxLinksPerMonth - arg.linksCreated,
+		"customPathConfig": arg.customPathConfig,
 	}
 	arg.session.Save(arg.r, arg.w)
 	if err := arg.template.ExecuteTemplate(arg.w, "create_link.html", data); err != nil {

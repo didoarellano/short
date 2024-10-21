@@ -143,6 +143,8 @@
               id="path"
               class="appearance-none border w-full py-2 px-3"
               placeholder="customslug"
+              minlength="{{ .customPathConfig.MinLength }}"
+              maxlength="{{ .customPathConfig.MaxLength }}"
 
               {{ $path := .validationErrors.FormFields.Path.Value }}
               value="{{ if $path }}{{ $path }}{{ end }}"
