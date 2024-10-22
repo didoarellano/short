@@ -25,5 +25,5 @@ go.work.sum
 tmp/
 
 # ignore only build artifacts
-static/*
-!static/src
+static/css/
+static/js/
