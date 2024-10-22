@@ -59,13 +59,7 @@
           {{ range .links }}
             <tr>
               <td>
-                <a class="link" href="/{{$p}}/links/{{ .short_code }}">
-                  {{ with .title }}
-                    {{ . }}
-                  {{ else }}
-                    {{ .destination_url }}
-                  {{ end }}
-                </a>
+                <a class="link" href="/{{$p}}/links/{{ .short_code }}">{{ .title }}</a>
               </td>
 
               <td>

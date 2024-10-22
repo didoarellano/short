@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/didoarellano/short/internal/auth"
@@ -16,6 +17,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
+	"golang.org/x/net/html"
 )
 
 type FormData struct {
@@ -231,6 +233,59 @@ func findDuplicateLinks(queries *db.Queries, userID int32, destinationUrl string
 	return duplicates
 }
 
+func getPageTitle(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch the URL: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("non-200 status code: %d", resp.StatusCode)
+	}
+
+	doc, err := html.Parse(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	var traverse func(*html.Node) string
+	traverse = func(n *html.Node) string {
+		if n.Type == html.ElementNode && n.Data == "title" && n.FirstChild != nil {
+			return n.FirstChild.Data
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			title := traverse(c)
+			if title != "" {
+				return title
+			}
+		}
+		return ""
+	}
+
+	title := traverse(doc)
+	if title == "" {
+		return "", fmt.Errorf("no title element found")
+	}
+
+	return strings.TrimSpace(title), nil
+}
+
+func formatUrlForTitle(rawUrl string) (string, error) {
+	// add "http://" for parsing purposes
+	if !strings.HasPrefix(rawUrl, "http://") && !strings.HasPrefix(rawUrl, "https://") {
+		rawUrl = "http://" + rawUrl
+	}
+
+	parsedURL, err := url.Parse(rawUrl)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse URL: %w", err)
+	}
+
+	host := strings.TrimPrefix(parsedURL.Host, "www.")
+	return host, nil
+}
+
 func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link, error) {
 	var shortCode string
 	if formData.Path != "" {
@@ -239,11 +294,26 @@ func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link,
 		shortCode = shortcode.New(userID, formData.DestinationUrl, 7)
 	}
 
+	title := formData.Title
+	if title == "" {
+		tempTitle, err := getPageTitle(formData.DestinationUrl)
+		if err != nil {
+			tempTitle, _ = formatUrlForTitle(formData.DestinationUrl)
+		}
+
+		if len(tempTitle) > 60 {
+			ellipsis := "…"
+			tempTitle = tempTitle[:60-len(ellipsis)] + ellipsis
+		}
+
+		title = tempTitle
+	}
+
 	return queries.CreateLink(context.Background(), db.CreateLinkParams{
 		UserID:         userID,
 		ShortCode:      shortCode,
 		DestinationUrl: formData.DestinationUrl,
-		Title:          pgtype.Text{String: formData.Title, Valid: true},
+		Title:          pgtype.Text{String: title, Valid: true},
 		Notes:          pgtype.Text{String: formData.Notes, Valid: true},
 	})
 }

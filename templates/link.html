@@ -7,10 +7,7 @@
     href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
   <link rel="stylesheet" href="/app/static/css/styles.css">
   {{ $titleString := .link.Title.String }}
-  {{ if not $titleString }}
-    {{ $titleString = .link.DestinationUrl }}
-  {{ end }}
-  <title>{{ $titleString }} - {{ .link.ShortCode }} | Short</title>
+  <title>{{ .link.ShortCode }} - {{ $titleString }} | Short</title>
 </head>
 <body class="container mx-auto max-w-screen-md px-4"></body>
 
@@ -49,7 +46,7 @@
 
   <main class="py-4 grid gap-4 ">
     {{ with .link }}
-      <div class="grid grid-cols-2 grid-rows-[1fr,auto] gap-4 p-4 shadow bg-slate-100 rounded">
+      <div class="grid grid-cols-[1fr,auto] grid-rows-[1fr,auto] gap-4 p-4 shadow bg-slate-100 rounded">
         <div>
           <h3 class="font-bold">{{ $titleString }}</h3>
 
