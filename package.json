@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tailwindcss build -i static/src/main.css -o static/css/styles.css",
+    "build-minify": "tailwindcss build -i static/src/main.css -o static/css/styles.css --minify",
     "watch": "tailwindcss build -i static/src/main.css -o static/css/styles.css --watch"
   },
   "devDependencies": {

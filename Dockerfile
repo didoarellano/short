@@ -2,9 +2,19 @@ ARG GO_VERSION=1
 FROM golang:${GO_VERSION}-bookworm AS builder
 
 WORKDIR /usr/src/app
+
 COPY go.mod go.sum ./
 RUN go mod download && go mod verify
+
+# DaisyUI doesn't work with Tailwind standalone cli :(
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+  && apt-get install -y nodejs
+
 COPY . .
+
+RUN npm ci
+RUN npm run build-minify
+
 RUN go build -v -o /run-app .
 
 
