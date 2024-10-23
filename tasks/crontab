@@ -1,1 +1,1 @@
-* * * * * /usr/local/bin/reset_monthly_usage.sh
+0 * * * * /usr/local/bin/reset_monthly_usage.sh
