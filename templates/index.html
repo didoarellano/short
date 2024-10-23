@@ -3,26 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🩳</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="/app/static/img/icon.svg">
+  <link rel="stylesheet" href="/app/static/css/styles.css">
   <title>Short</title>
 </head>
-<body>
-  <nav>
-    <ul>
-      <li><a href="/">Home</a></li>
-      {{ $p := .AppPathPrefix }}
-      <li><a href="/{{$p}}/links">My Links</a></li>
-      <li><a href="/{{$p}}/auth/google">Sign in with Google</a></li>
-      <li>
-        <form action="/{{$p}}/signout" method="POST">
-          <button type="submit">Sign Out</button>
-        </form>
-      </li>
-      <li><a href="/{{$p}}/links/new">Create New Link</a></li>
-    </ul>
-  </nav>
-
-  <h1>🩳 Short</h1>
-  <h2>{{.greeting}}</h2>
+<body class="container mx-auto max-w-screen-md h-dvh px-4 grid items-center justify-center">
+  <h1 class="flex items-center font-black text-slate-700 text-9xl">
+    <span class="sr-only">SHORT</span>
+    <span aria-hidden="true">S</span>
+    <img aria-hidden="true" class="h-[1em]" src="/app/static/img/icon.svg" >
+    <span aria-hidden="true">ORT</span>
+  </h1>
 </body>
 </html>
