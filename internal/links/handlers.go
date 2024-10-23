@@ -39,7 +39,7 @@ func NewLinkHandlers(t *templ.Templ, q *db.Queries, s session.SessionStore, r *r
 	}
 }
 
-const paginationLimit int = 2
+const paginationLimit int = 15
 
 type PaginationLink struct {
 	Href     string
