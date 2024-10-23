@@ -16,29 +16,29 @@ var AppData = &GlobalAppData{
 	RedirectorBaseURL: os.Getenv("REDIRECTOR_BASE_URL"),
 }
 
-type CustomPathConfig struct {
+type CustomSlugConfig struct {
 	ReservedWords []string `json:"reserved_words"`
 	MinLength     int      `json:"min_length"`
 	MaxLength     int      `json:"max_length"`
 }
 
 var (
-	customPathConfig *CustomPathConfig
+	customSlugConfig *CustomSlugConfig
 	once             sync.Once
 )
 
-func LoadCustomPathConfig() (*CustomPathConfig, error) {
+func LoadCustomSlugConfig() (*CustomSlugConfig, error) {
 	var loadErr error
 	once.Do(func() {
 		file, err := os.ReadFile("./internal/config/custom-paths.json")
 		if err != nil {
 			loadErr = err
 		}
-		customPathConfig = &CustomPathConfig{}
-		err = json.Unmarshal(file, &customPathConfig)
+		customSlugConfig = &CustomSlugConfig{}
+		err = json.Unmarshal(file, &customSlugConfig)
 		if err != nil {
 			loadErr = err
 		}
 	})
-	return customPathConfig, loadErr
+	return customSlugConfig, loadErr
 }

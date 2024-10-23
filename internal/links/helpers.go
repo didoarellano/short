@@ -22,7 +22,7 @@ import (
 
 type FormData struct {
 	DestinationUrl  string
-	Path            string
+	Slug            string
 	Title           string
 	Notes           string
 	CreateDuplicate bool
@@ -65,7 +65,7 @@ type ShowCreateFormParams struct {
 	user             auth.UserSession
 	userSubscription subscriptions.Subscription
 	linksCreated     int32
-	customPathConfig *config.CustomPathConfig
+	customSlugConfig *config.CustomSlugConfig
 }
 
 func ShowCreateForm(arg ShowCreateFormParams) {
@@ -81,7 +81,7 @@ func ShowCreateForm(arg ShowCreateFormParams) {
 		"userSubscription": arg.userSubscription,
 		"user":             arg.user,
 		"linksRemaining":   arg.userSubscription.MaxLinksPerMonth - arg.linksCreated,
-		"customPathConfig": arg.customPathConfig,
+		"customSlugConfig": arg.customSlugConfig,
 	}
 	arg.session.Save(arg.r, arg.w)
 	if err := arg.template.ExecuteTemplate(arg.w, "create_link.html", data); err != nil {
@@ -93,7 +93,7 @@ func ParseCreateForm(r *http.Request) FormData {
 	r.ParseForm()
 	formData := FormData{
 		DestinationUrl:  strings.TrimSpace(r.FormValue("url")),
-		Path:            strings.TrimSpace(r.FormValue("path")),
+		Slug:            strings.TrimSpace(r.FormValue("slug")),
 		Title:           strings.TrimSpace(r.FormValue("title")),
 		Notes:           strings.TrimSpace(r.FormValue("notes")),
 		CreateDuplicate: r.FormValue("create-duplicate") == "on",
@@ -118,8 +118,8 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 				"Url": {
 					Value: formData.DestinationUrl,
 				},
-				"Path": {
-					Value: formData.Path,
+				"Slug": {
+					Value: formData.Slug,
 				},
 				"Title": {
 					Value: formData.Title,
@@ -147,31 +147,31 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 		validation.IsValid = false
 	}
 
-	if formData.Path != "" && !arg.userSubscription.CanCustomisePath {
+	if formData.Slug != "" && !arg.userSubscription.CanCustomiseSlug {
 		validation.IsValid = false
-		validation.Errors.FormFields["Path"] = FormFieldValidation{
-			Value:   formData.Path,
-			Message: "Custom paths require a pro subscription",
+		validation.Errors.FormFields["Slug"] = FormFieldValidation{
+			Value:   formData.Slug,
+			Message: "Custom slugs require a pro subscription",
 		}
 	}
 
-	if formData.Path != "" && arg.userSubscription.CanCustomisePath {
-		customPathConfig, _ := config.LoadCustomPathConfig()
-		err := ValidateCustomPath(formData.Path, customPathConfig)
+	if formData.Slug != "" && arg.userSubscription.CanCustomiseSlug {
+		customSlugConfig, _ := config.LoadCustomSlugConfig()
+		err := ValidateCustomSlug(formData.Slug, customSlugConfig)
 
 		if err != nil {
 			validation.IsValid = false
-			validation.Errors.FormFields["Path"] = FormFieldValidation{
-				Value:   formData.Path,
+			validation.Errors.FormFields["Slug"] = FormFieldValidation{
+				Value:   formData.Slug,
 				Message: err.Error(),
 			}
 		} else {
-			link, err := arg.queries.GetLinkByShortCode(context.Background(), formData.Path)
+			link, err := arg.queries.GetLinkByShortCode(context.Background(), formData.Slug)
 			if err != pgx.ErrNoRows {
 				validation.IsValid = false
-				validation.Errors.FormFields["Path"] = FormFieldValidation{
-					Value:   formData.Path,
-					Message: fmt.Sprintf("%s is already in use", formData.Path),
+				validation.Errors.FormFields["Slug"] = FormFieldValidation{
+					Value:   formData.Slug,
+					Message: fmt.Sprintf("%s is already in use", formData.Slug),
 				}
 
 				if link.UserID == arg.userID {
@@ -180,7 +180,7 @@ func ValidateCreateForm(arg ValidateCreateFormParams) FormValidation {
 							Text: link.ShortCode,
 							Href: fmt.Sprintf("/%s/links/%s", config.AppData.AppPathPrefix, link.ShortCode),
 						}},
-						Message: "You've used this path before",
+						Message: "You've used this slug before",
 					}
 				}
 			}
@@ -288,8 +288,8 @@ func formatUrlForTitle(rawUrl string) (string, error) {
 
 func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link, error) {
 	var shortCode string
-	if formData.Path != "" {
-		shortCode = formData.Path
+	if formData.Slug != "" {
+		shortCode = formData.Slug
 	} else {
 		shortCode = shortcode.New(userID, formData.DestinationUrl, 7)
 	}
@@ -318,15 +318,15 @@ func SaveNewLink(queries *db.Queries, userID int32, formData FormData) (db.Link,
 	})
 }
 
-func ValidateCustomPath(path string, config *config.CustomPathConfig) error {
-	length := len(path)
+func ValidateCustomSlug(slug string, config *config.CustomSlugConfig) error {
+	length := len(slug)
 	if length < config.MinLength || length > config.MaxLength {
-		return fmt.Errorf("path must be between %d and %d characters", config.MinLength, config.MaxLength)
+		return fmt.Errorf("slug must be between %d and %d characters", config.MinLength, config.MaxLength)
 	}
 
 	for _, word := range config.ReservedWords {
-		if strings.EqualFold(path, word) {
-			return errors.New("path is reserved")
+		if strings.EqualFold(slug, word) {
+			return errors.New("slug is reserved")
 		}
 	}
 

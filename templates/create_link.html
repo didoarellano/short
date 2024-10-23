@@ -129,22 +129,22 @@
         </div>
       {{ end }}
 
-      {{ if .userSubscription.CanCustomisePath }}
+      {{ if .userSubscription.CanCustomiseSlug }}
         <div class="grid gap-1">
-          <label for="path" class="block font-bold text-slate-600">Custom path <span class="text-xs italic">(optional)</span></label>
+          <label for="slug" class="block font-bold text-slate-600">Custom slug <span class="text-xs italic">(optional)</span></label>
           <input
               type="text"
-              name="path"
-              id="path"
+              name="slug"
+              id="slug"
               class="appearance-none border w-full py-2 px-3"
-              placeholder="customslug"
-              minlength="{{ .customPathConfig.MinLength }}"
-              maxlength="{{ .customPathConfig.MaxLength }}"
+              placeholder="Must be between 4-20 characters"
+              minlength="{{ .customSlugConfig.MinLength }}"
+              maxlength="{{ .customSlugConfig.MaxLength }}"
 
-              {{ $path := .validationErrors.FormFields.Path.Value }}
-              value="{{ if $path }}{{ $path }}{{ end }}"
+              {{ $slug := .validationErrors.FormFields.Slug.Value }}
+              value="{{ if $slug }}{{ $slug }}{{ end }}"
           />
-          {{ with .validationErrors.FormFields.Path }}
+          {{ with .validationErrors.FormFields.Slug }}
             <p class="text-red-500 text-xs italic">{{ .Message }}</p>
           {{ end }}
         </div>

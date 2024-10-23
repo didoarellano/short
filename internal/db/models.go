@@ -34,7 +34,7 @@ type Subscription struct {
 	ID                  int32
 	Name                string
 	MaxLinksPerMonth    int32
-	CanCustomisePath    bool
+	CanCustomiseSlug    bool
 	CanCreateDuplicates bool
 	CanViewAnalytics    bool
 	CreatedAt           pgtype.Timestamp

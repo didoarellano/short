@@ -23,7 +23,7 @@ user_usage AS (
     $1, CURRENT_DATE, CURRENT_DATE + INTERVAL '1 month'
   )
 )
-SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates, s.can_view_analytics
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_slug, s.can_create_duplicates, s.can_view_analytics
 FROM user_sub us
 JOIN subscriptions s
 ON us.subscription_id = s.id
@@ -33,7 +33,7 @@ type AddBasicSubscriptionRow struct {
 	Status              string
 	Name                string
 	MaxLinksPerMonth    int32
-	CanCustomisePath    bool
+	CanCustomiseSlug    bool
 	CanCreateDuplicates bool
 	CanViewAnalytics    bool
 }
@@ -45,7 +45,7 @@ func (q *Queries) AddBasicSubscription(ctx context.Context, userID int32) (AddBa
 		&i.Status,
 		&i.Name,
 		&i.MaxLinksPerMonth,
-		&i.CanCustomisePath,
+		&i.CanCustomiseSlug,
 		&i.CanCreateDuplicates,
 		&i.CanViewAnalytics,
 	)
@@ -322,7 +322,7 @@ func (q *Queries) GetUserCurrentUsage(ctx context.Context, userID int32) (int32,
 }
 
 const getUserSubscription = `-- name: GetUserSubscription :one
-SELECT us.status, s.name, s.max_links_per_month, s.can_customise_path, s.can_create_duplicates, s.can_view_analytics
+SELECT us.status, s.name, s.max_links_per_month, s.can_customise_slug, s.can_create_duplicates, s.can_view_analytics
 FROM user_subscriptions us
 JOIN subscriptions s
 ON us.subscription_id=s.id
@@ -333,7 +333,7 @@ type GetUserSubscriptionRow struct {
 	Status              string
 	Name                string
 	MaxLinksPerMonth    int32
-	CanCustomisePath    bool
+	CanCustomiseSlug    bool
 	CanCreateDuplicates bool
 	CanViewAnalytics    bool
 }
@@ -345,7 +345,7 @@ func (q *Queries) GetUserSubscription(ctx context.Context, userID int32) (GetUse
 		&i.Status,
 		&i.Name,
 		&i.MaxLinksPerMonth,
-		&i.CanCustomisePath,
+		&i.CanCustomiseSlug,
 		&i.CanCreateDuplicates,
 		&i.CanViewAnalytics,
 	)

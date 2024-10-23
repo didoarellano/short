@@ -21,7 +21,7 @@ type Subscription struct {
 	Status              string
 	Name                string
 	MaxLinksPerMonth    int32
-	CanCustomisePath    bool
+	CanCustomiseSlug    bool
 	CanCreateDuplicates bool
 	CanViewAnalytics    bool
 }
