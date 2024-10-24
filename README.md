@@ -30,3 +30,9 @@ make migrate
 ```
 make migrate ENV=prod
 ```
+
+### Run tests
+
+```
+make test
+```
