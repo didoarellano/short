@@ -1,6 +1,7 @@
 package config
 
 import (
+	_ "embed"
 	"encoding/json"
 	"os"
 	"sync"
@@ -27,15 +28,14 @@ var (
 	once             sync.Once
 )
 
+//go:embed custom-paths.json
+var customPathsJSON []byte
+
 func LoadCustomSlugConfig() (*CustomSlugConfig, error) {
 	var loadErr error
 	once.Do(func() {
-		file, err := os.ReadFile("./internal/config/custom-paths.json")
-		if err != nil {
-			loadErr = err
-		}
 		customSlugConfig = &CustomSlugConfig{}
-		err = json.Unmarshal(file, &customSlugConfig)
+		err := json.Unmarshal(customPathsJSON, &customSlugConfig)
 		if err != nil {
 			loadErr = err
 		}
