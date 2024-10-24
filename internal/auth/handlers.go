@@ -105,7 +105,7 @@ func (ah *AuthHandler) OAuthCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if subscription.Name == "" {
-		subscription, err = ah.queries.GetUserSubscription(context.Background(), user.ID)
+		subscription, err = ah.queries.GetUserSubscription(ctx, user.ID)
 		if err != nil {
 			log.Printf("Failed to get user subscription: %v", err)
 			http.Error(w, "Failed to get user subscription", http.StatusInternalServerError)
