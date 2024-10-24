@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/didoarellano/short/internal/db"
@@ -106,7 +107,9 @@ func parseUserAgent(uaString string) ([]byte, error) {
 func getClientIP(r *http.Request) string {
 	forwarded := r.Header.Get("X-Forwarded-For")
 	if forwarded != "" {
-		return forwarded
+		ips := strings.Split(forwarded, ",")
+		clientIP := strings.TrimSpace(ips[0])
+		return clientIP
 	}
 
 	realIP := r.Header.Get("X-Real-IP")
