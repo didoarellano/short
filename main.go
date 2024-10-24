@@ -20,7 +20,7 @@ import (
 	"github.com/didoarellano/short/internal/templ"
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rbcervilla/redisstore/v8"
 )
 
@@ -50,12 +50,12 @@ func main() {
 		log.Fatal("Faled to create redis store", err)
 	}
 
-	pg_conn, err := pgx.Connect(ctx, os.Getenv("DATABASE_URL"))
+	dbpool, err := pgxpool.New(ctx, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer pg_conn.Close(ctx)
-	queries = db.New(pg_conn)
+	defer dbpool.Close()
+	queries = db.New(dbpool)
 
 	auth.Initialise()
 	t := templ.New(stdtemplate, config.AppData)
