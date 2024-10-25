@@ -5,17 +5,20 @@ import (
 	"net/http"
 
 	"github.com/didoarellano/short/internal/config"
+	"github.com/didoarellano/short/internal/session"
 )
 
 type Templ struct {
-	AppData *config.GlobalAppData
-	t       *template.Template
+	AppData      *config.GlobalAppData
+	sessionStore session.SessionStore
+	t            *template.Template
 }
 
-func New(t *template.Template, AppData *config.GlobalAppData) *Templ {
+func New(t *template.Template, AppData *config.GlobalAppData, s session.SessionStore) *Templ {
 	return &Templ{
-		AppData: AppData,
-		t:       t,
+		AppData:      AppData,
+		t:            t,
+		sessionStore: s,
 	}
 }
 
@@ -31,7 +34,12 @@ func (templ *Templ) ExecuteTemplate(w http.ResponseWriter, templateName string, 
 
 func (templ *Templ) RenderStatic(templateName string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := templ.ExecuteTemplate(w, templateName, nil); err != nil {
+		session, _ := templ.sessionStore.Get(r, "session")
+		user := session.Values["user"]
+		data := map[string]interface{}{
+			"user": user,
+		}
+		if err := templ.ExecuteTemplate(w, templateName, data); err != nil {
 			http.Error(w, "Failed to render template", http.StatusInternalServerError)
 		}
 	}

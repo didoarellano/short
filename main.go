@@ -58,7 +58,7 @@ func main() {
 	queries = db.New(dbpool)
 
 	auth.Initialise()
-	t := templ.New(stdtemplate, config.AppData)
+	t := templ.New(stdtemplate, config.AppData, sessionStore)
 
 	rootRouter := mux.NewRouter()
 
