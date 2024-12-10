@@ -1,0 +1,17 @@
+services:
+  app:
+    image: cosmtrek/air
+    depends_on:
+      - redis
+    volumes:
+      - ./:/app
+    ports: 
+      - "8080:8080"
+      - "8090:8090"
+    environment:
+      REDIS_ADDR: redis:6379
+      air_wd: /app
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
